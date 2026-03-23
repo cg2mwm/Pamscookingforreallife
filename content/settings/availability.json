@@ -1,0 +1,24 @@
+{
+  "dates": [
+    {
+      "date": "2026-04-05",
+      "slots": ["10:00 AM", "2:00 PM"],
+      "booked": false
+    },
+    {
+      "date": "2026-04-12",
+      "slots": ["11:00 AM"],
+      "booked": false
+    },
+    {
+      "date": "2026-04-19",
+      "slots": ["10:00 AM", "1:00 PM", "3:00 PM"],
+      "booked": false
+    },
+    {
+      "date": "2026-04-26",
+      "slots": [],
+      "booked": true
+    }
+  ]
+}
