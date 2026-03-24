@@ -1,124 +1,133 @@
-import { useState } from 'react'
-import { availability, homepage } from '../utils/content'
+import { useState, useEffect } from 'react'
+import { getAvailability } from '../supabase'
 import './BookingPage.css'
 
-function formatDate(dateStr) {
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-  })
+function buildCalendar(year, month, availMap) {
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const weeks = []
+  let day = 1 - firstDay
+  for (let w = 0; w < 6; w++) {
+    const week = []
+    for (let d = 0; d < 7; d++, day++) {
+      if (day < 1 || day > daysInMonth) { week.push(null); continue }
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      week.push({ day, dateStr, avail: availMap[dateStr] || null })
+    }
+    if (week.some(d => d !== null)) weeks.push(week)
+  }
+  return weeks
 }
 
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+
 export default function BookingPage() {
-  const [selectedDate, setSelectedDate] = useState(null)
+  const [availability, setAvailability] = useState([])
+  const [selected, setSelected] = useState(null)
   const [selectedSlot, setSelectedSlot] = useState(null)
   const [submitted, setSubmitted] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', phone: '', notes: '' })
+  const today = new Date()
+  const [calYear, setCalYear] = useState(today.getFullYear())
+  const [calMonth, setCalMonth] = useState(today.getMonth())
 
-  const available = availability.dates.filter(d => !d.booked && d.slots.length > 0)
+  useEffect(() => { getAvailability().then(setAvailability) }, [])
 
-  const handleDateSelect = (dateObj) => {
-    setSelectedDate(dateObj)
+  const availMap = {}
+  availability.forEach(a => { availMap[a.date] = a })
+
+  const weeks = buildCalendar(calYear, calMonth, availMap)
+
+  const prevMonth = () => { if (calMonth === 0) { setCalYear(y => y - 1); setCalMonth(11) } else setCalMonth(m => m - 1) }
+  const nextMonth = () => { if (calMonth === 11) { setCalYear(y => y + 1); setCalMonth(0) } else setCalMonth(m => m + 1) }
+
+  const handleDayClick = (cell) => {
+    if (!cell?.avail || cell.avail.booked) return
+    setSelected(cell)
     setSelectedSlot(null)
   }
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault()
-    const body = new URLSearchParams({
-      'form-name': 'booking',
-      ...form,
-      date: selectedDate?.date || '',
-      slot: selectedSlot || '',
-    })
-    try {
-      await fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() })
-      setSubmitted(true)
-    } catch {
-      setSubmitted(true) // Show success even if fetch fails in dev
-    }
+    const body = new URLSearchParams({ 'form-name': 'booking', ...form, date: selected?.dateStr || '', slot: selectedSlot || '' })
+    try { await fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() }) } catch {}
+    setSubmitted(true)
   }
 
-  if (submitted) {
-    return (
-      <div>
-        <div className="page-header">
-          <div className="container">
-            <h1>Booking Request Sent!</h1>
-          </div>
-        </div>
-        <section className="section">
-          <div className="container booking-success">
-            <div className="booking-success__icon">🎂</div>
-            <h2>Thank you, {form.name}!</h2>
-            <p>
-              We've received your consultation request for <strong>{selectedDate && formatDate(selectedDate.date)}</strong> at <strong>{selectedSlot}</strong>.
-            </p>
-            <p>
-              We'll be in touch at <strong>{form.email}</strong> within 24 hours to confirm your booking.
-            </p>
-            {homepage.email && (
-              <p style={{ marginTop: '0.5rem' }}>
-                Questions? Email us at <a href={`mailto:${homepage.email}`} style={{ color: 'var(--rose)' }}>{homepage.email}</a>
-              </p>
-            )}
-          </div>
-        </section>
-      </div>
-    )
-  }
+  const fmt = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+
+  if (submitted) return (
+    <div>
+      <div className="page-header"><div className="container"><h1>Request Sent! 🎂</h1></div></div>
+      <section className="section"><div className="container" style={{ textAlign: 'center', maxWidth: 520 }}>
+        <p style={{ fontSize: '5rem', marginBottom: '1rem' }}>🎉</p>
+        <h2 style={{ marginBottom: '1rem' }}>Thank you, {form.name}!</h2>
+        <p>We received your request for <strong>{selected && fmt(selected.dateStr)}</strong> at <strong>{selectedSlot}</strong>.</p>
+        <p style={{ marginTop: '0.5rem' }}>We'll be in touch at <strong>{form.email}</strong> within 24 hours.</p>
+      </div></section>
+    </div>
+  )
 
   return (
     <div>
       <div className="page-header">
-        <div className="container">
-          <h1>Book a Consultation</h1>
-          <p>A free 30-minute call to discuss your cake vision and timeline.</p>
-        </div>
+        <div className="container"><h1>Book a Consultation</h1><p>A free 30-minute call to design your perfect cake.</p></div>
       </div>
-
       <section className="section">
         <div className="container booking-layout">
+          <div className="booking-main">
 
-          {/* Step 1: Pick Date */}
-          <div className="booking-steps">
-            <div className="booking-step">
-              <div className="booking-step__header">
-                <span className="booking-step__num">1</span>
-                <h3>Choose a Date</h3>
+            {/* Calendar */}
+            <div className="cal-card">
+              <div className="cal-header">
+                <button className="cal-nav" onClick={prevMonth}>‹</button>
+                <h3 className="cal-title">{MONTHS[calMonth]} {calYear}</h3>
+                <button className="cal-nav" onClick={nextMonth}>›</button>
               </div>
-              {available.length === 0 ? (
-                <p className="booking-none">No dates currently available. Please check back soon or email us directly.</p>
-              ) : (
-                <div className="date-list">
-                  {available.map(dateObj => (
-                    <button
-                      key={dateObj.date}
-                      className={`date-btn ${selectedDate?.date === dateObj.date ? 'active' : ''}`}
-                      onClick={() => handleDateSelect(dateObj)}
-                    >
-                      <span className="date-btn__date">{formatDate(dateObj.date)}</span>
-                      <span className="date-btn__count">{dateObj.slots.length} slot{dateObj.slots.length !== 1 ? 's' : ''}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+
+              <div className="cal-grid">
+                {DAYS.map(d => <div key={d} className="cal-dayname">{d}</div>)}
+                {weeks.map((week, wi) =>
+                  week.map((cell, di) => {
+                    if (!cell) return <div key={`e-${wi}-${di}`} className="cal-cell cal-cell--empty" />
+                    const isPast = new Date(cell.dateStr) < new Date(today.toDateString())
+                    const isAvail = !!cell.avail && !cell.avail.booked && !isPast
+                    const isBooked = cell.avail?.booked
+                    const isSelected = selected?.dateStr === cell.dateStr
+                    return (
+                      <button
+                        key={cell.dateStr}
+                        className={`cal-cell ${isAvail ? 'cal-cell--avail' : ''} ${isBooked ? 'cal-cell--booked' : ''} ${isPast ? 'cal-cell--past' : ''} ${isSelected ? 'cal-cell--selected' : ''}`}
+                        onClick={() => handleDayClick(cell)}
+                        disabled={!isAvail}
+                        title={isAvail ? `${cell.avail.slots?.length} slot(s) available` : isBooked ? 'Fully booked' : ''}
+                      >
+                        <span className="cal-cell__num">{cell.day}</span>
+                        {isAvail && <span className="cal-cell__dot" />}
+                        {isBooked && <span className="cal-cell__x">✕</span>}
+                      </button>
+                    )
+                  })
+                )}
+              </div>
+
+              <div className="cal-legend">
+                <span><span className="legend-dot legend-avail" /> Available</span>
+                <span><span className="legend-dot legend-booked" /> Booked</span>
+                <span><span className="legend-dot legend-selected" /> Selected</span>
+              </div>
             </div>
 
-            {/* Step 2: Pick Time */}
-            {selectedDate && (
+            {/* Slots */}
+            {selected && (
               <div className="booking-step">
-                <div className="booking-step__header">
-                  <span className="booking-step__num">2</span>
-                  <h3>Choose a Time</h3>
-                </div>
-                <div className="slot-list">
-                  {selectedDate.slots.map(slot => (
-                    <button
-                      key={slot}
-                      className={`slot-btn ${selectedSlot === slot ? 'active' : ''}`}
-                      onClick={() => setSelectedSlot(slot)}
-                    >
+                <h4>Available times on {fmt(selected.dateStr)}</h4>
+                <div className="slots">
+                  {selected.avail.slots.map(slot => (
+                    <button key={slot} className={`slot-btn ${selectedSlot === slot ? 'active' : ''}`} onClick={() => setSelectedSlot(slot)}>
                       {slot}
                     </button>
                   ))}
@@ -126,71 +135,36 @@ export default function BookingPage() {
               </div>
             )}
 
-            {/* Step 3: Contact Info */}
-            {selectedDate && selectedSlot && (
+            {/* Form */}
+            {selected && selectedSlot && (
               <div className="booking-step">
-                <div className="booking-step__header">
-                  <span className="booking-step__num">3</span>
-                  <h3>Your Details</h3>
-                </div>
-
-                <form
-                  onSubmit={handleSubmit}
-                  data-netlify="true"
-                  name="booking"
-                  className="booking-form"
-                >
+                <h4>Your Details</h4>
+                <form onSubmit={handleSubmit} data-netlify="true" name="booking" className="booking-form">
                   <input type="hidden" name="form-name" value="booking" />
-                  <input type="hidden" name="date" value={selectedDate?.date} />
+                  <input type="hidden" name="date" value={selected?.dateStr} />
                   <input type="hidden" name="slot" value={selectedSlot} />
-
                   <div className="form-row">
-                    <div className="form-field">
-                      <label htmlFor="name">Full Name *</label>
-                      <input id="name" name="name" type="text" required value={form.name} onChange={handleChange} placeholder="Jane Smith" />
-                    </div>
-                    <div className="form-field">
-                      <label htmlFor="email">Email *</label>
-                      <input id="email" name="email" type="email" required value={form.email} onChange={handleChange} placeholder="jane@email.com" />
-                    </div>
+                    <div className="form-field"><label>Full Name *</label><input name="name" type="text" required value={form.name} onChange={handleChange} placeholder="Jane Smith" /></div>
+                    <div className="form-field"><label>Email *</label><input name="email" type="email" required value={form.email} onChange={handleChange} placeholder="jane@email.com" /></div>
                   </div>
-
-                  <div className="form-field">
-                    <label htmlFor="phone">Phone (optional)</label>
-                    <input id="phone" name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="(336) 555-0100" />
-                  </div>
-
-                  <div className="form-field">
-                    <label htmlFor="notes">Tell me about your event</label>
-                    <textarea id="notes" name="notes" rows={4} value={form.notes} onChange={handleChange} placeholder="Date of event, type of cake, number of guests, any ideas or inspiration…" />
-                  </div>
-
-                  <button type="submit" className="btn btn-rose btn-full">
-                    Send Booking Request →
-                  </button>
+                  <div className="form-field"><label>Phone (optional)</label><input name="phone" type="tel" value={form.phone} onChange={handleChange} /></div>
+                  <div className="form-field"><label>Tell me about your event</label><textarea name="notes" rows={4} value={form.notes} onChange={handleChange} placeholder="Date of event, type of cake, number of guests, any ideas…" /></div>
+                  <button type="submit" className="btn btn-sage btn-full">Send Booking Request →</button>
                 </form>
               </div>
             )}
           </div>
 
-          {/* Sidebar info */}
           <aside className="booking-sidebar">
             <div className="booking-info-card">
               <h4>What to Expect</h4>
               <ul>
                 <li>📞 30-minute phone or video call</li>
-                <li>🎂 We'll discuss your cake design, flavors, and size</li>
-                <li>📅 Timeline and delivery planning</li>
-                <li>💰 Pricing and deposit details</li>
+                <li>🎂 Discuss your cake design & flavors</li>
+                <li>📅 Plan your timeline & delivery</li>
+                <li>💰 Pricing & deposit details</li>
               </ul>
             </div>
-            {homepage.email && (
-              <div className="booking-info-card">
-                <h4>Prefer to Email?</h4>
-                <p>Reach us directly at:</p>
-                <a href={`mailto:${homepage.email}`} className="booking-email-link">{homepage.email}</a>
-              </div>
-            )}
           </aside>
         </div>
       </section>

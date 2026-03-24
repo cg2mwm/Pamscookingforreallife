@@ -8,52 +8,48 @@ import CakeDetail from './pages/CakeDetail'
 import BlogPage from './pages/BlogPage'
 import BlogPost from './pages/BlogPost'
 import BookingPage from './pages/BookingPage'
+import Admin from './pages/Admin'
 
-// Catches JS crashes and shows a message instead of blank screen
 class ErrorBoundary extends Component {
-  constructor(props) {
-    super(props)
-    this.state = { hasError: false, error: null }
-  }
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error }
-  }
+  constructor(props) { super(props); this.state = { err: null } }
+  static getDerivedStateFromError(e) { return { err: e } }
   render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{ padding: '4rem 2rem', textAlign: 'center', fontFamily: 'sans-serif' }}>
-          <h2>Something went wrong loading this page.</h2>
-          <p style={{ color: '#888', marginTop: '1rem' }}>
-            {this.state.error?.message}
-          </p>
-          <button
-            onClick={() => this.setState({ hasError: false })}
-            style={{ marginTop: '1.5rem', padding: '0.5rem 1.5rem', cursor: 'pointer' }}
-          >
-            Try Again
-          </button>
-        </div>
-      )
-    }
+    if (this.state.err) return (
+      <div style={{ padding: '4rem 2rem', textAlign: 'center', fontFamily: 'sans-serif' }}>
+        <h2>Something went wrong</h2>
+        <p style={{ color: '#888', marginTop: '1rem' }}>{this.state.err?.message}</p>
+        <button onClick={() => this.setState({ err: null })} style={{ marginTop: '1.5rem', padding: '0.5rem 1.5rem', cursor: 'pointer' }}>Try Again</button>
+      </div>
+    )
     return this.props.children
   }
 }
 
+// Admin is at /my-kitchen — no link anywhere on the public site
 export default function App() {
   return (
     <ErrorBoundary>
-      <Navbar />
-      <main>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/cakes" element={<CakesPage />} />
-          <Route path="/cakes/:slug" element={<CakeDetail />} />
-          <Route path="/blog" element={<BlogPage />} />
-          <Route path="/blog/:slug" element={<BlogPost />} />
-          <Route path="/booking" element={<BookingPage />} />
-        </Routes>
-      </main>
-      <Footer />
+      <Routes>
+        {/* Hidden admin — no navbar/footer */}
+        <Route path="/my-kitchen" element={<Admin />} />
+        {/* Public site */}
+        <Route path="*" element={
+          <>
+            <Navbar />
+            <main>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/cakes" element={<CakesPage />} />
+                <Route path="/cakes/:id" element={<CakeDetail />} />
+                <Route path="/recipes" element={<BlogPage />} />
+                <Route path="/recipes/:id" element={<BlogPost />} />
+                <Route path="/booking" element={<BookingPage />} />
+              </Routes>
+            </main>
+            <Footer />
+          </>
+        } />
+      </Routes>
     </ErrorBoundary>
   )
 }

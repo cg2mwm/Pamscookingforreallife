@@ -1,55 +1,49 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { blogPosts } from '../utils/content'
+import { getPosts } from '../supabase'
 import './BlogPage.css'
 
-function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    year: 'numeric', month: 'long', day: 'numeric'
-  })
-}
-
 export default function BlogPage() {
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => { getPosts().then(d => { setPosts(d); setLoading(false) }) }, [])
+
+  const fmt = d => new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
   return (
     <div>
       <div className="page-header">
         <div className="container">
           <h1>Recipes & Tips</h1>
-          <p>Techniques, stories, and recipes from our kitchen to yours.</p>
+          <p>Techniques, stories, and recipes from my kitchen to yours.</p>
         </div>
       </div>
-
       <section className="section">
         <div className="container">
-          {blogPosts.length === 0 ? (
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-              No posts yet — check back soon!
-            </p>
-          ) : (
-            <div className="blog-grid">
-              {blogPosts.map((post, i) => (
-                <Link to={`/blog/${post.slug}`} key={post.slug} className={`blog-card card fade-up fade-up-${Math.min(i + 1, 4)}`}>
-                  <div className="blog-card__image-wrap">
-                    {post.image ? (
-                      <img src={post.image} alt={post.title} loading="lazy" />
-                    ) : (
-                      <div className="img-placeholder blog-card__placeholder">📖</div>
-                    )}
-                  </div>
-                  <div className="blog-card__body">
-                    <div className="blog-card__meta">
-                      <time>{formatDate(post.date)}</time>
-                      {post.tags && post.tags.slice(0, 2).map(tag => (
-                        <span key={tag} className="badge badge-rose">{tag}</span>
-                      ))}
+          {loading ? <p className="loading">Loading recipes…</p>
+            : posts.length === 0 ? <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No recipes yet — check back soon!</p>
+            : (
+              <div className="blog-grid">
+                {posts.map((post, i) => (
+                  <Link to={`/recipes/${post.id}`} key={post.id} className={`blog-card card fade-up delay-${Math.min(i+1,3)}`}>
+                    <div className="blog-card__img">
+                      {post.image_url ? <img src={post.image_url} alt={post.title} loading="lazy" /> : <div className="img-placeholder">📖</div>}
                     </div>
-                    <h3 className="blog-card__title">{post.title}</h3>
-                    <p className="blog-card__excerpt">{post.excerpt}</p>
-                    <span className="blog-card__read-more">Read more →</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
+                    <div className="blog-card__body">
+                      <div className="blog-card__meta">
+                        <time>{fmt(post.date)}</time>
+                        {post.tags?.slice(0,2).map(t => <span key={t} className="badge badge-sage">{t}</span>)}
+                      </div>
+                      <h3>{post.title}</h3>
+                      <p>{post.excerpt}</p>
+                      <span className="blog-card__more">Read more →</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )
+          }
         </div>
       </section>
     </div>

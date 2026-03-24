@@ -1,78 +1,32 @@
-.footer {
-  background: var(--mocha);
-  color: var(--cream);
-  padding-top: 4rem;
-}
+.footer { background: var(--sage-dark); padding-top: 3.5rem; }
 
 .footer__inner {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  gap: 3rem;
-  padding-bottom: 3rem;
-  border-bottom: 1px solid rgba(250,246,240,0.1);
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3rem;
+  padding-bottom: 2.5rem; border-bottom: 1px solid rgba(253,250,244,0.12);
 }
 
-.footer__logo {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  display: block;
-  margin-bottom: 0.75rem;
-}
-.footer__star { color: var(--gold-light); }
-.footer__tagline {
-  color: rgba(250,246,240,0.55);
-  font-size: 0.9rem;
-  line-height: 1.6;
-  margin-bottom: 1rem;
-}
-.footer__insta {
-  font-size: 0.82rem;
-  color: var(--gold-light);
-  letter-spacing: 0.05em;
-  transition: color 0.2s;
-}
-.footer__insta:hover { color: var(--cream); }
-
-.footer__nav h4,
-.footer__contact h4 {
-  font-family: var(--font-body);
-  font-size: 0.72rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--gold-light);
-  font-weight: 500;
-  margin-bottom: 1rem;
+.footer__bizcard {
+  width: 180px; border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
-.footer__nav,
-.footer__contact {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+.footer__nav h4, .footer__contact h4 {
+  font-family: var(--font-body); font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--sage-light); margin-bottom: 1rem;
 }
+.footer__nav { display: flex; flex-direction: column; gap: 0.6rem; }
+.footer__nav a { font-size: 0.9rem; color: rgba(253,250,244,0.65); transition: color 0.2s; }
+.footer__nav a:hover { color: var(--cream); }
 
-.footer__nav a,
-.footer__contact a,
-.footer__contact span {
-  font-size: 0.88rem;
-  color: rgba(250,246,240,0.65);
-  transition: color 0.2s;
-}
-.footer__nav a:hover,
-.footer__contact a:hover { color: var(--cream); }
+.footer__contact { display: flex; flex-direction: column; gap: 0.4rem; }
+.footer__contact p { font-size: 0.88rem; color: rgba(253,250,244,0.6); }
+.footer__note { font-style: italic; margin-top: 0.5rem; }
 
-.footer__bottom {
-  padding: 1.25rem 0;
-}
-.footer__bottom p {
-  font-size: 0.78rem;
-  color: rgba(250,246,240,0.3);
-  text-align: center;
-}
+.footer__bottom { padding: 1.2rem 0; }
+.footer__bottom p { font-size: 0.78rem; color: rgba(253,250,244,0.3); text-align: center; }
 
 @media (max-width: 768px) {
-  .footer__inner {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
+  .footer__inner { grid-template-columns: 1fr; gap: 2rem; }
+  .footer__bizcard { width: 140px; }
 }
