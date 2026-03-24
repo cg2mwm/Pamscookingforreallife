@@ -1,8 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const url  = import.meta.env.VITE_SUPABASE_URL  || ''
-const key  = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-
+const url = import.meta.env.VITE_SUPABASE_URL || ''
+const key = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 export const supabase = createClient(url, key)
 
 // ── Cakes ──────────────────────────────────────────
@@ -15,15 +14,10 @@ export async function getCake(id) {
   return data
 }
 export async function saveCake(cake) {
-  if (cake.id) {
-    const { id, ...rest } = cake
-    return supabase.from('cakes').update(rest).eq('id', id)
-  }
+  if (cake.id) { const { id, ...rest } = cake; return supabase.from('cakes').update(rest).eq('id', id) }
   return supabase.from('cakes').insert(cake)
 }
-export async function deleteCake(id) {
-  return supabase.from('cakes').delete().eq('id', id)
-}
+export async function deleteCake(id) { return supabase.from('cakes').delete().eq('id', id) }
 
 // ── Blog ───────────────────────────────────────────
 export async function getPosts() {
@@ -35,17 +29,12 @@ export async function getPost(id) {
   return data
 }
 export async function savePost(post) {
-  if (post.id) {
-    const { id, ...rest } = post
-    return supabase.from('blog_posts').update(rest).eq('id', id)
-  }
+  if (post.id) { const { id, ...rest } = post; return supabase.from('blog_posts').update(rest).eq('id', id) }
   return supabase.from('blog_posts').insert(post)
 }
-export async function deletePost(id) {
-  return supabase.from('blog_posts').delete().eq('id', id)
-}
+export async function deletePost(id) { return supabase.from('blog_posts').delete().eq('id', id) }
 
-// ── Settings ───────────────────────────────────────
+// ── Settings / Page Content ────────────────────────
 export async function getSetting(key) {
   const { data } = await supabase.from('settings').select('value').eq('key', key).single()
   return data?.value || null
@@ -66,12 +55,43 @@ export async function deleteAvailability(id) {
   return supabase.from('availability').delete().eq('id', id)
 }
 
+// ── Orders ─────────────────────────────────────────
+export async function getOrders() {
+  const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false })
+  return data || []
+}
+export async function placeOrder(order) {
+  const { data, error } = await supabase.from('orders').insert(order).select().single()
+  if (error) throw error
+  return data
+}
+export async function updateOrderStatus(id, status) {
+  return supabase.from('orders').update({ status }).eq('id', id)
+}
+export async function deleteOrder(id) {
+  return supabase.from('orders').delete().eq('id', id)
+}
+
 // ── Image Upload ───────────────────────────────────
 export async function uploadImage(file) {
-  const ext  = file.name.split('.').pop()
+  const ext = file.name.split('.').pop()
   const name = `${Date.now()}.${ext}`
   const { error } = await supabase.storage.from('images').upload(name, file, { upsert: true })
   if (error) throw error
   const { data } = supabase.storage.from('images').getPublicUrl(name)
   return data.publicUrl
+}
+
+// ── Payment link generator ─────────────────────────
+export function buildPaymentLink(payment, amount) {
+  if (!payment) return null
+  const { method, payment_id } = payment
+  const amt = Number(amount).toFixed(2)
+  if (method === 'PayPal') {
+    const id = payment_id.includes('@') ? payment_id.replace('@','') : payment_id
+    return `https://paypal.me/${id}/${amt}`
+  }
+  if (method === 'Venmo') return `https://venmo.com/${payment_id}?txn=charge&amount=${amt}&note=Cake+Deposit`
+  if (method === 'CashApp') return `https://cash.app/${payment_id.startsWith('$') ? payment_id : '$'+payment_id}/${amt}`
+  return null
 }
