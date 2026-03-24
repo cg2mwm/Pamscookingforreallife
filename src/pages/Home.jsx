@@ -5,31 +5,41 @@ import CakeCard from '../components/CakeCard'
 import './Home.css'
 
 export default function Home() {
-  const [settings, setSettings] = useState(null)
+  const [pg, setPg] = useState(null)
+  const [site, setSite] = useState(null)
   const [featured, setFeatured] = useState([])
   const [latestPost, setLatestPost] = useState(null)
 
   useEffect(() => {
-    getSetting('homepage').then(s => setSettings(s || {}))
+    getSetting('page_home').then(d => setPg(d || {}))
+    getSetting('homepage').then(d => setSite(d || {}))
     getCakes().then(all => setFeatured(all.filter(c => c.featured && c.available).slice(0, 3)))
     getPosts().then(p => setLatestPost(p[0] || null))
   }, [])
 
+  if (!pg || !site) return null
+
+  const heroTitle    = pg.hero_title    || site.bakeryName  || "Pam's Cooking for Real Life"
+  const heroSub      = pg.hero_subtitle || site.tagline     || 'Handcrafted cakes for life\'s sweetest moments'
+  const heroImg      = pg.hero_image    || '/images/pam-cake.jpg'
+  const featHeading  = pg.featured_heading || 'Featured Cakes'
+  const featSub      = pg.featured_subtext || 'Every cake is made entirely from scratch, just for you.'
+  const aboutHeading = pg.about_heading    || 'Real food. Real love.'
+  const aboutImg     = pg.about_image      || '/images/pam-cake.jpg'
+  const ctaHeading   = pg.cta_heading   || 'Ready for your dream cake?'
+  const ctaSub       = pg.cta_subtext   || "Book a free consultation and let's talk about your vision."
+
   return (
     <div className="home">
-      {/* ── Hero ── */}
+      {/* Hero */}
       <section className="hero">
-        <img src="/images/pam-cake.jpg" alt="Pam holding a beautiful strawberry cake" className="hero__photo" />
+        <img src={heroImg} alt="Hero" className="hero__photo" />
         <div className="hero__overlay" />
         <div className="container hero__content">
           <p className="hero__eyebrow fade-up delay-1">✦ Homemade with Love</p>
-          <h1 className="hero__title fade-up delay-2">
-            {settings?.bakeryName || "Pam's Cooking for Real Life"}
-          </h1>
-          <p className="hero__sub fade-up delay-3">
-            {settings?.tagline || 'Handcrafted cakes for life\'s sweetest moments'}
-          </p>
-          <div className="hero__actions fade-up" style={{ animationDelay: '0.4s' }}>
+          <h1 className="hero__title fade-up delay-2">{heroTitle}</h1>
+          <p className="hero__sub fade-up delay-3">{heroSub}</p>
+          <div className="hero__actions fade-up" style={{ animationDelay:'0.4s' }}>
             <Link to="/cakes" className="btn btn-primary">Browse Cakes</Link>
             <Link to="/booking" className="btn hero__outline-btn">Book a Consult</Link>
           </div>
@@ -37,15 +47,15 @@ export default function Home() {
         <div className="hero__scroll"><div className="hero__scroll-line" /></div>
       </section>
 
-      {/* ── Featured Cakes ── */}
+      {/* Featured Cakes */}
       {featured.length > 0 && (
         <section className="section">
           <div className="container">
             <div className="section-header">
               <span className="section-label">Our Work</span>
-              <h2>Featured Cakes</h2>
+              <h2>{featHeading}</h2>
               <div className="divider centered" />
-              <p className="section-sub">Every cake is made entirely from scratch, just for you.</p>
+              <p className="section-sub">{featSub}</p>
             </div>
             <div className="home-grid">
               {featured.map((cake, i) => (
@@ -61,41 +71,39 @@ export default function Home() {
         </section>
       )}
 
-      {/* ── About Pam ── */}
+      {/* About */}
       <section className="section gingham-bg about">
         <div className="container about__inner">
           <div className="about__img-col">
             <div className="about__frame">
-              <img src="/images/pam-cake.jpg" alt="Pam with her strawberry cake" />
+              <img src={aboutImg} alt="Pam with her cake" />
               <div className="about__frame-accent" />
             </div>
           </div>
           <div className="about__text">
             <span className="section-label">The Story</span>
-            <h2>Real food.<br />Real love.</h2>
+            <h2 dangerouslySetInnerHTML={{ __html: aboutHeading.replace(/\n/g,'<br/>') }} />
             <div className="divider" />
-            {settings?.aboutStory
-              ? settings.aboutStory.split('\n\n').map((p, i) => <p key={i} style={{ marginBottom: '1rem' }}>{p}</p>)
-              : <p>Every cake starts with a conversation. I want to know your story — the love you're celebrating, the memory you're creating. Then I bake it in.</p>
-            }
+            {(site.aboutStory || '').split('\n\n').filter(Boolean).map((p, i) => (
+              <p key={i} style={{ marginBottom:'1rem' }}>{p}</p>
+            ))}
             <div className="about__details">
-              <span>📍 Burlington, NC</span>
-              {settings?.phone && <a href={`tel:${settings.phone}`}>📞 {settings.phone}</a>}
-              {settings?.email && <a href={`mailto:${settings.email}`}>✉️ {settings.email}</a>}
+              {site.location && <span>📍 {site.location}</span>}
+              {site.phone    && <a href={`tel:${site.phone}`}>📞 {site.phone}</a>}
+              {site.email    && <a href={`mailto:${site.email}`}>✉️ {site.email}</a>}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Latest Recipe ── */}
+      {/* Latest Recipe */}
       {latestPost && (
         <section className="section">
           <div className="container latest">
             <div className="latest__img">
               {latestPost.image_url
                 ? <img src={latestPost.image_url} alt={latestPost.title} />
-                : <div className="img-placeholder">📖</div>
-              }
+                : <div className="img-placeholder">📖</div>}
             </div>
             <div className="latest__content">
               <span className="section-label">From the Kitchen</span>
@@ -108,12 +116,12 @@ export default function Home() {
         </section>
       )}
 
-      {/* ── Booking CTA ── */}
+      {/* CTA */}
       <section className="booking-cta">
         <div className="container booking-cta__inner">
           <span className="section-label">Let's Create Together</span>
-          <h2>Ready for your dream cake?</h2>
-          <p>Book a free consultation and let's talk about your vision.</p>
+          <h2>{ctaHeading}</h2>
+          <p>{ctaSub}</p>
           <Link to="/booking" className="btn btn-primary">Check Availability →</Link>
         </div>
       </section>

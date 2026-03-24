@@ -322,6 +322,7 @@ function OrdersDashboard() {
 }
 
 // ─── Page Editor ─────────────────────────────────────────────
+// ─── Page Editor ─────────────────────────────────────────────
 function PageEditor() {
   const PAGES = [
     { key:'page_home',    label:'🏠 Home Page' },
@@ -331,120 +332,195 @@ function PageEditor() {
   ]
   const [activePage, setActivePage] = useState('page_home')
   const [content, setContent] = useState({})
-  const [homepage, setHomepage] = useState(null)
+  const [site, setSite] = useState(null)
   const [payments, setPayments] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  useEffect(()=>{
-    PAGES.forEach(p => getSetting(p.key).then(v => setContent(c=>({...c,[p.key]:v||{}}))))
-    getSetting('homepage').then(d=>setHomepage(d||{bakeryName:"Pam's Cooking for Real Life",tagline:'',aboutStory:'',phone:'',email:'',instagram:''}))
-    getSetting('payments').then(d=>setPayments(d||{method:'PayPal',payment_id:'',custom_instructions:''}))
-  },[])
+  useEffect(() => {
+    PAGES.forEach(p => getSetting(p.key).then(v => setContent(c => ({ ...c, [p.key]: v || {} }))))
+    getSetting('homepage').then(d => setSite(d || { bakeryName:"Pam's Cooking for Real Life", tagline:'', aboutStory:'', phone:'', email:'', instagram:'', location:'' }))
+    getSetting('payments').then(d => setPayments(d || { method:'PayPal', payment_id:'', custom_instructions:'' }))
+  }, [])
 
-  const setC = (k,v) => setContent(c=>({...c,[activePage]:{...c[activePage],[k]:v}}))
-  const setH = (k,v) => setHomepage(h=>({...h,[k]:v}))
-  const setP = (k,v) => setPayments(p=>({...p,[k]:v}))
+  const setC = (k, v) => setContent(c => ({ ...c, [activePage]: { ...c[activePage], [k]: v } }))
+  const setS = (k, v) => setSite(s => ({ ...s, [k]: v }))
+  const setP = (k, v) => setPayments(p => ({ ...p, [k]: v }))
 
   const save = async () => {
     setSaving(true)
-    await setSetting(activePage, content[activePage])
-    if (homepage) await setSetting('homepage', homepage)
+    await setSetting(activePage, content[activePage] || {})
+    if (site)     await setSetting('homepage', site)
     if (payments) await setSetting('payments', payments)
-    setSaving(false); setSaved(true); setTimeout(()=>setSaved(false),3000)
+    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 3000)
   }
 
   const pg = content[activePage] || {}
 
+  if (!site || !payments) return <p className="loading">Loading…</p>
+
   return (
     <div>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1.5rem',flexWrap:'wrap',gap:'1rem'}}>
-        <h3 className="tab-title" style={{marginBottom:0}}>Edit Pages</h3>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.5rem', flexWrap:'wrap', gap:'1rem' }}>
+        <h3 className="tab-title" style={{ marginBottom:0 }}>Edit Pages</h3>
         <button className="btn btn-sage" onClick={save} disabled={saving}>
-          {saving?'Saving…':saved?'✓ Saved!':'Save Changes'}
+          {saving ? 'Saving…' : saved ? '✓ Saved!' : 'Save Changes'}
         </button>
       </div>
 
-      {/* Page tabs */}
       <div className="page-tabs">
-        {PAGES.map(p=>(
-          <button key={p.key} className={`page-tab ${activePage===p.key?'active':''}`} onClick={()=>setActivePage(p.key)}>{p.label}</button>
+        {PAGES.map(p => (
+          <button key={p.key} className={`page-tab ${activePage===p.key?'active':''}`} onClick={() => setActivePage(p.key)}>{p.label}</button>
         ))}
       </div>
 
       <div className="settings-section">
-        {/* HOME PAGE */}
-        {activePage==='page_home' && homepage && (
+
+        {/* ── HOME PAGE ── */}
+        {activePage === 'page_home' && (
           <>
-            <h4>Hero Section</h4>
-            <div className="form-field"><label>Bakery Name / Hero Title</label><input value={homepage.bakeryName||''} onChange={e=>setH('bakeryName',e.target.value)} /></div>
-            <div className="form-field"><label>Hero Tagline</label><input value={homepage.tagline||''} onChange={e=>setH('tagline',e.target.value)} /></div>
-            <h4 style={{marginTop:'0.5rem'}}>Featured Cakes Section</h4>
-            <div className="form-field"><label>Section Heading</label><input value={pg.featured_heading||''} onChange={e=>setC('featured_heading',e.target.value)} placeholder="Featured Cakes" /></div>
-            <div className="form-field"><label>Section Subtext</label><input value={pg.featured_subtext||''} onChange={e=>setC('featured_subtext',e.target.value)} /></div>
-            <h4 style={{marginTop:'0.5rem'}}>About / Story Section</h4>
-            <div className="form-field"><label>About Heading</label><input value={pg.about_heading||''} onChange={e=>setC('about_heading',e.target.value)} placeholder="Real food. Real love." /></div>
-            <div className="form-field"><label>Your Story (use blank lines for paragraphs)</label><textarea rows={6} value={homepage.aboutStory||''} onChange={e=>setH('aboutStory',e.target.value)} /></div>
-            <h4 style={{marginTop:'0.5rem'}}>Bottom Call-to-Action</h4>
-            <div className="form-field"><label>CTA Heading</label><input value={pg.cta_heading||''} onChange={e=>setC('cta_heading',e.target.value)} placeholder="Ready for your dream cake?" /></div>
-            <div className="form-field"><label>CTA Subtext</label><input value={pg.cta_subtext||''} onChange={e=>setC('cta_subtext',e.target.value)} /></div>
-            <h4 style={{marginTop:'0.5rem'}}>Contact Info (shown in footer + about section)</h4>
-            <div className="form-row-2">
-              <div className="form-field"><label>Phone</label><input value={homepage.phone||''} onChange={e=>setH('phone',e.target.value)} placeholder="(336) 555-0100" /></div>
-              <div className="form-field"><label>Email</label><input value={homepage.email||''} onChange={e=>setH('email',e.target.value)} /></div>
+            <h4>🖼 Hero Section</h4>
+            <div className="form-field"><label>Hero Title</label>
+              <input value={pg.hero_title || site.bakeryName || ''} onChange={e => { setC('hero_title', e.target.value); setS('bakeryName', e.target.value) }} placeholder="Pam's Cooking for Real Life" />
             </div>
-            <div className="form-field"><label>Instagram Handle (without @)</label><input value={homepage.instagram||''} onChange={e=>setH('instagram',e.target.value)} /></div>
+            <div className="form-field"><label>Hero Tagline (shown under title)</label>
+              <input value={pg.hero_subtitle || site.tagline || ''} onChange={e => { setC('hero_subtitle', e.target.value); setS('tagline', e.target.value) }} />
+            </div>
+            <ImgUpload label="Hero Background Image" value={pg.hero_image || ''} onChange={v => setC('hero_image', v)} />
+
+            <h4 style={{ marginTop:'0.75rem' }}>🎂 Featured Cakes Section</h4>
+            <div className="form-field"><label>Section Heading</label>
+              <input value={pg.featured_heading || ''} onChange={e => setC('featured_heading', e.target.value)} placeholder="Featured Cakes" />
+            </div>
+            <div className="form-field"><label>Section Subtext</label>
+              <input value={pg.featured_subtext || ''} onChange={e => setC('featured_subtext', e.target.value)} />
+            </div>
+
+            <h4 style={{ marginTop:'0.75rem' }}>📖 About / Story Section</h4>
+            <div className="form-field"><label>About Section Heading</label>
+              <input value={pg.about_heading || ''} onChange={e => setC('about_heading', e.target.value)} placeholder="Real food. Real love." />
+            </div>
+            <ImgUpload label="About Section Image" value={pg.about_image || ''} onChange={v => setC('about_image', v)} />
+            <div className="form-field"><label>Your Story (blank line = new paragraph)</label>
+              <textarea rows={7} value={site.aboutStory || ''} onChange={e => setS('aboutStory', e.target.value)} placeholder="Write about yourself and your baking…" />
+            </div>
+
+            <h4 style={{ marginTop:'0.75rem' }}>📣 Bottom Call-to-Action</h4>
+            <div className="form-field"><label>CTA Heading</label>
+              <input value={pg.cta_heading || ''} onChange={e => setC('cta_heading', e.target.value)} placeholder="Ready for your dream cake?" />
+            </div>
+            <div className="form-field"><label>CTA Subtext</label>
+              <input value={pg.cta_subtext || ''} onChange={e => setC('cta_subtext', e.target.value)} />
+            </div>
+
+            <h4 style={{ marginTop:'0.75rem' }}>📞 Contact Info</h4>
+            <div className="form-row-2">
+              <div className="form-field"><label>Phone</label><input value={site.phone||''} onChange={e=>setS('phone',e.target.value)} placeholder="(336) 555-0100" /></div>
+              <div className="form-field"><label>Email</label><input value={site.email||''} onChange={e=>setS('email',e.target.value)} /></div>
+            </div>
+            <div className="form-row-2">
+              <div className="form-field"><label>Location</label><input value={site.location||''} onChange={e=>setS('location',e.target.value)} placeholder="Burlington, NC" /></div>
+              <div className="form-field"><label>Instagram Handle (no @)</label><input value={site.instagram||''} onChange={e=>setS('instagram',e.target.value)} /></div>
+            </div>
           </>
         )}
 
-        {/* CAKES PAGE */}
-        {activePage==='page_cakes' && (
+        {/* ── CAKES PAGE ── */}
+        {activePage === 'page_cakes' && (
           <>
             <h4>Page Header</h4>
             <div className="form-field"><label>Page Heading</label><input value={pg.heading||''} onChange={e=>setC('heading',e.target.value)} placeholder="Cake Catalog" /></div>
             <div className="form-field"><label>Page Subtext</label><input value={pg.subtext||''} onChange={e=>setC('subtext',e.target.value)} /></div>
-            <p className="settings-hint">To add, edit, or remove individual cakes, use the 🎂 Cakes tab.</p>
+            <p className="settings-hint">💡 To add, edit, or remove individual cakes, use the 🎂 Cakes tab.</p>
           </>
         )}
 
-        {/* RECIPES PAGE */}
-        {activePage==='page_recipes' && (
+        {/* ── RECIPES PAGE ── */}
+        {activePage === 'page_recipes' && (
           <>
             <h4>Page Header</h4>
             <div className="form-field"><label>Page Heading</label><input value={pg.heading||''} onChange={e=>setC('heading',e.target.value)} placeholder="Recipes & Tips" /></div>
             <div className="form-field"><label>Page Subtext</label><input value={pg.subtext||''} onChange={e=>setC('subtext',e.target.value)} /></div>
-            <p className="settings-hint">To add, edit, or remove individual recipes, use the 📖 Recipes tab.</p>
+            <p className="settings-hint">💡 To add, edit, or remove individual recipes, use the 📖 Recipes tab.</p>
           </>
         )}
 
-        {/* BOOKING PAGE */}
-        {activePage==='page_booking' && (
+        {/* ── BOOKING PAGE ── */}
+        {activePage === 'page_booking' && (
           <>
             <h4>Page Header</h4>
             <div className="form-field"><label>Page Heading</label><input value={pg.heading||''} onChange={e=>setC('heading',e.target.value)} placeholder="Book a Consultation" /></div>
             <div className="form-field"><label>Page Subtext</label><input value={pg.subtext||''} onChange={e=>setC('subtext',e.target.value)} /></div>
-            <div className="form-field"><label>Sidebar Info Text (one item per line)</label><textarea rows={5} value={pg.sidebar_text||''} onChange={e=>setC('sidebar_text',e.target.value)} placeholder={"30-minute call\nDiscuss your cake design\nPricing details"} /></div>
-            <p className="settings-hint">To manage available dates, use the 📅 Calendar tab.</p>
+            <div className="form-field">
+              <label>Sidebar Info (one bullet per line)</label>
+              <textarea rows={6} value={pg.sidebar_text||''} onChange={e=>setC('sidebar_text',e.target.value)} placeholder={"30-minute phone or video call\nDiscuss your cake design\nPricing and deposit details"} />
+            </div>
+            <p className="settings-hint">💡 To manage available dates, use the 📅 Calendar tab.</p>
           </>
         )}
       </div>
 
-      {/* Payment settings always visible */}
-      {payments && (
-        <div className="settings-section" style={{marginTop:'1.5rem'}}>
-          <h4>💳 Payment Settings</h4>
-          <p style={{fontSize:'0.85rem',color:'var(--text-muted)',marginBottom:'1rem'}}>When customers pay their deposit, they're sent to this payment link.</p>
-          <div className="form-row-2">
-            <div className="form-field"><label>Payment Method</label>
-              <select value={payments.method} onChange={e=>setP('method',e.target.value)}>
-                {['PayPal','Venmo','CashApp','Zelle','BankTransfer','Custom'].map(m=><option key={m}>{m}</option>)}
-              </select>
+      {/* ── SITE-WIDE STYLE SETTINGS (always shown) ── */}
+      <div className="settings-section" style={{ marginTop:'1.5rem' }}>
+        <h4>🎨 Site Colors & Fonts</h4>
+        <p style={{ fontSize:'0.85rem', color:'var(--text-muted)', marginBottom:'1rem' }}>These apply across the whole site.</p>
+        <div className="form-row-2">
+          <div className="form-field">
+            <label>Primary Color (green buttons, accents)</label>
+            <div style={{ display:'flex', gap:'0.75rem', alignItems:'center' }}>
+              <input type="color" value={pg.color_primary || '#2D5233'} onChange={e => { setC('color_primary',e.target.value); document.documentElement.style.setProperty('--sage-dark', e.target.value) }} style={{ width:48, height:36, padding:2, border:'2px solid var(--sage-pale)', borderRadius:'var(--radius)', cursor:'pointer' }} />
+              <input value={pg.color_primary||'#2D5233'} onChange={e=>{ setC('color_primary',e.target.value); document.documentElement.style.setProperty('--sage-dark',e.target.value) }} placeholder="#2D5233" style={{ flex:1 }} className="url-input" />
             </div>
-            <div className="form-field"><label>Your PayPal email / Handle</label><input value={payments.payment_id||''} onChange={e=>setP('payment_id',e.target.value)} placeholder="youremail@gmail.com or @Handle" /></div>
           </div>
-          <div className="form-field"><label>Custom Instructions (for Zelle, Bank Transfer, or Custom)</label><textarea rows={2} value={payments.custom_instructions||''} onChange={e=>setP('custom_instructions',e.target.value)} /></div>
+          <div className="form-field">
+            <label>Secondary Color (lighter green)</label>
+            <div style={{ display:'flex', gap:'0.75rem', alignItems:'center' }}>
+              <input type="color" value={pg.color_secondary || '#6B9E70'} onChange={e => { setC('color_secondary',e.target.value); document.documentElement.style.setProperty('--sage', e.target.value) }} style={{ width:48, height:36, padding:2, border:'2px solid var(--sage-pale)', borderRadius:'var(--radius)', cursor:'pointer' }} />
+              <input value={pg.color_secondary||'#6B9E70'} onChange={e=>{ setC('color_secondary',e.target.value); document.documentElement.style.setProperty('--sage',e.target.value) }} placeholder="#6B9E70" style={{ flex:1 }} className="url-input" />
+            </div>
+          </div>
         </div>
-      )}
+        <div className="form-row-2">
+          <div className="form-field">
+            <label>Background Color</label>
+            <div style={{ display:'flex', gap:'0.75rem', alignItems:'center' }}>
+              <input type="color" value={pg.color_bg || '#FDFAF4'} onChange={e => { setC('color_bg',e.target.value); document.documentElement.style.setProperty('--cream', e.target.value) }} style={{ width:48, height:36, padding:2, border:'2px solid var(--sage-pale)', borderRadius:'var(--radius)', cursor:'pointer' }} />
+              <input value={pg.color_bg||'#FDFAF4'} onChange={e=>{ setC('color_bg',e.target.value); document.documentElement.style.setProperty('--cream',e.target.value) }} placeholder="#FDFAF4" style={{ flex:1 }} className="url-input" />
+            </div>
+          </div>
+          <div className="form-field">
+            <label>Heading Font</label>
+            <select value={pg.font_heading||'Dancing Script'} onChange={e=>{ setC('font_heading',e.target.value); document.documentElement.style.setProperty('--font-display', `'${e.target.value}', cursive`) }}>
+              <option value="Dancing Script">Dancing Script (current — handwritten)</option>
+              <option value="Playfair Display">Playfair Display (elegant serif)</option>
+              <option value="Lora">Lora (classic serif)</option>
+              <option value="Cormorant Garamond">Cormorant Garamond (refined)</option>
+              <option value="Pacifico">Pacifico (fun &amp; casual)</option>
+              <option value="Satisfy">Satisfy (script)</option>
+            </select>
+          </div>
+        </div>
+        <p className="settings-hint">💡 Color and font changes preview immediately. Click <strong>Save Changes</strong> to make them permanent.</p>
+      </div>
+
+      {/* ── PAYMENT SETTINGS ── */}
+      <div className="settings-section" style={{ marginTop:'1.5rem' }}>
+        <h4>💳 Payment Settings</h4>
+        <p style={{ fontSize:'0.85rem', color:'var(--text-muted)', marginBottom:'1rem' }}>When customers pay their deposit, they go to this payment link.</p>
+        <div className="form-row-2">
+          <div className="form-field"><label>Payment Method</label>
+            <select value={payments.method||'PayPal'} onChange={e=>setP('method',e.target.value)}>
+              {['PayPal','Venmo','CashApp','Zelle','BankTransfer','Custom'].map(m=><option key={m}>{m}</option>)}
+            </select>
+          </div>
+          <div className="form-field"><label>Your PayPal email / Handle</label>
+            <input value={payments.payment_id||''} onChange={e=>setP('payment_id',e.target.value)} placeholder="youremail@gmail.com or @YourHandle" />
+          </div>
+        </div>
+        <div className="form-field"><label>Custom Payment Instructions (for Zelle / Bank Transfer / Custom)</label>
+          <textarea rows={2} value={payments.custom_instructions||''} onChange={e=>setP('custom_instructions',e.target.value)} />
+        </div>
+      </div>
     </div>
   )
 }

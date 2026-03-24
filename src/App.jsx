@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import { Component } from 'react'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import ApplyTheme from './components/ApplyTheme'
 import Home from './pages/Home'
 import CakesPage from './pages/CakesPage'
 import CakeDetail from './pages/CakeDetail'
@@ -15,17 +16,16 @@ class ErrorBoundary extends Component {
   static getDerivedStateFromError(e) { return { err: e } }
   render() {
     if (this.state.err) return (
-      <div style={{ padding: '4rem 2rem', textAlign: 'center', fontFamily: 'sans-serif' }}>
+      <div style={{ padding:'4rem 2rem', textAlign:'center', fontFamily:'sans-serif' }}>
         <h2>Something went wrong</h2>
-        <p style={{ color: '#888', marginTop: '1rem' }}>{this.state.err?.message}</p>
-        <button onClick={() => this.setState({ err: null })} style={{ marginTop: '1.5rem', padding: '0.5rem 1.5rem', cursor: 'pointer' }}>Try Again</button>
+        <p style={{ color:'#888', marginTop:'1rem' }}>{this.state.err?.message}</p>
+        <button onClick={() => this.setState({ err:null })} style={{ marginTop:'1.5rem', padding:'0.5rem 1.5rem', cursor:'pointer' }}>Try Again</button>
       </div>
     )
     return this.props.children
   }
 }
 
-// Admin is at /my-kitchen — no link anywhere on the public site
 export default function App() {
   return (
     <ErrorBoundary>
@@ -35,6 +35,7 @@ export default function App() {
         {/* Public site */}
         <Route path="*" element={
           <>
+            <ApplyTheme />
             <Navbar />
             <main>
               <Routes>
