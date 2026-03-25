@@ -1,16 +1,17 @@
 import { Routes, Route } from 'react-router-dom'
 import { Component } from 'react'
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
-import ApplyTheme from './components/ApplyTheme'
-import Home from './pages/Home'
-import CakesPage from './pages/CakesPage'
-import CakeDetail from './pages/CakeDetail'
-import BlogPage from './pages/BlogPage'
-import BlogPost from './pages/BlogPost'
-import BookingPage from './pages/BookingPage'
-import OrderSuccess from './pages/OrderSuccess'
-import Admin from './pages/Admin'
+import Navbar        from './components/Navbar'
+import Footer        from './components/Footer'
+import ApplyTheme    from './components/ApplyTheme'
+import Home          from './pages/Home'
+import CakesPage     from './pages/CakesPage'
+import CakeDetail    from './pages/CakeDetail'
+import BooksPage     from './pages/BooksPage'
+import BlogPage      from './pages/BlogPage'
+import BlogPost      from './pages/BlogPost'
+import BookingPage   from './pages/BookingPage'
+import OrderSuccess  from './pages/OrderSuccess'
+import Admin         from './pages/Admin'
 
 class ErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { err: null } }
@@ -38,13 +39,14 @@ export default function App() {
             <Navbar />
             <main>
               <Routes>
-                <Route path="/"                element={<Home />} />
-                <Route path="/cakes"           element={<CakesPage />} />
-                <Route path="/cakes/:id"       element={<CakeDetail />} />
-                <Route path="/recipes"         element={<BlogPage />} />
-                <Route path="/recipes/:id"     element={<BlogPost />} />
-                <Route path="/booking"         element={<BookingPage />} />
-                <Route path="/order-success"   element={<OrderSuccess />} />
+                <Route path="/"              element={<Home />} />
+                <Route path="/cakes"         element={<CakesPage />} />
+                <Route path="/cakes/:id"     element={<CakeDetail />} />
+                <Route path="/books"         element={<BooksPage />} />
+                <Route path="/recipes"       element={<BlogPage />} />
+                <Route path="/recipes/:id"   element={<BlogPost />} />
+                <Route path="/booking"       element={<BookingPage />} />
+                <Route path="/order-success" element={<OrderSuccess />} />
               </Routes>
             </main>
             <Footer />

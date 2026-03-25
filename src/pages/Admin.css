@@ -124,3 +124,44 @@
   .order-card { grid-template-columns: 56px 1fr; }
   .order-card__actions { grid-column: 1/-1; flex-direction: row; }
 }
+
+/* ── Contacts ─────────────────────────────────── */
+.new-badge { background: #c0392b; color: #fff; font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 100px; }
+.filter-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.filter-count { background: #c0392b; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 100px; margin-left: 0.3rem; }
+.contacts-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.contact-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.25rem; display: grid; grid-template-columns: 1fr auto; gap: 1.25rem; align-items: start; border-left: 3px solid transparent; }
+.contact-card--new { border-left-color: #1565c0; }
+.contact-card__top { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
+.contact-card__details { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+.contact-card__details a { color: var(--sage); }
+.contact-card__message { font-style: italic; font-size: 0.88rem; color: var(--text-muted); background: var(--sage-ghost); padding: 0.6rem 0.9rem; border-radius: 4px; margin: 0.4rem 0; }
+
+/* ── Calendar picker ──────────────────────────── */
+.cal-picker-wrap { margin-top: 0.75rem; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; max-width: 340px; }
+.cal-picker__nav { display: flex; align-items: center; justify-content: space-between; background: var(--sage-dark); padding: 0.75rem 1rem; color: var(--cream); font-family: var(--font-display); font-size: 1.2rem; }
+.cal-picker__grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; padding: 0.6rem; background: var(--sage-pale); }
+.cp-dayname { text-align: center; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); padding: 0.3rem 0; background: var(--white); }
+.cp-cell { background: var(--white); border: none; min-height: 36px; font-size: 0.85rem; font-weight: 700; color: #ccc; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.cp-cell--empty { background: var(--cream); }
+.cp-cell--past { color: #ddd; cursor: default; }
+.cp-cell--active { cursor: pointer; color: var(--sage-dark); }
+.cp-cell--active:hover { background: var(--sage-pale); }
+
+/* Time dropdown */
+.time-dropdown { display: flex; align-items: center; gap: 0.4rem; }
+.time-dropdown select { padding: 0.5rem 0.6rem; border: 2px solid var(--sage-pale); border-radius: var(--radius); font-family: var(--font-body); font-size: 0.9rem; color: var(--text); background: var(--white); cursor: pointer; outline: none; }
+.time-dropdown span { font-weight: 700; color: var(--text-muted); }
+
+/* Pending slots */
+.pending-slots { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+.pending-slot { background: var(--sage-pale); color: var(--sage-dark); padding: 0.3rem 0.65rem; border-radius: 100px; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; }
+.pending-slot button { background: none; border: none; cursor: pointer; color: var(--sage-dark); font-size: 1rem; line-height: 1; padding: 0; }
+
+/* Color swatches */
+.color-row { display: flex; align-items: center; gap: 0.75rem; }
+.color-swatch { width: 44px; height: 36px; padding: 2px; border: 2px solid var(--sage-pale); border-radius: var(--radius); cursor: pointer; flex-shrink: 0; }
+
+@media(max-width:768px){
+  .contact-card { grid-template-columns: 1fr; }
+}

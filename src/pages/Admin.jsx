@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
-import { supabase, getCakes, saveCake, deleteCake, getPosts, savePost, deletePost,
-  getSetting, setSetting, getAvailability, saveAvailability, deleteAvailability,
-  uploadImage, getOrders, updateOrderStatus, deleteOrder } from '../supabase'
+import { supabase, getCakes, saveCake, deleteCake, getBooks, saveBook, deleteBook,
+  getPosts, savePost, deletePost, getSetting, setSetting,
+  getAvailability, saveAvailability, deleteAvailability,
+  getOrders, updateOrderStatus, deleteOrder,
+  getContactRequests, updateContactStatus, deleteContactRequest,
+  uploadImage } from '../supabase'
+import { applyTheme, loadFont } from '../components/ApplyTheme'
 import './Admin.css'
 
-// ─── Auth ────────────────────────────────────────────────────
+// ─── Login ───────────────────────────────────────────────────
 function LoginScreen() {
   const [email, setEmail] = useState('')
-  const [pass, setPass] = useState('')
-  const [err, setErr] = useState('')
+  const [pass,  setPass]  = useState('')
+  const [err,   setErr]   = useState('')
   const [loading, setLoading] = useState(false)
   const submit = async e => {
     e.preventDefault(); setErr(''); setLoading(true)
@@ -18,14 +22,14 @@ function LoginScreen() {
   return (
     <div className="login-screen">
       <div className="login-box">
-        <img src="/images/biz-card.jpg" alt="Pam's Cooking" className="login-logo" />
+        <img src="/images/biz-card.jpg" alt="Pam's" className="login-logo" />
         <h2>Kitchen Door</h2>
         <p>Private access only</p>
         <form onSubmit={submit} className="login-form">
           <div className="form-field"><label>Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} required /></div>
           <div className="form-field"><label>Password</label><input type="password" value={pass} onChange={e=>setPass(e.target.value)} required /></div>
           {err && <p className="login-err">{err}</p>}
-          <button type="submit" className="btn btn-primary btn-full" disabled={loading}>{loading ? 'Signing in…' : 'Sign In'}</button>
+          <button type="submit" className="btn btn-primary btn-full" disabled={loading}>{loading?'Signing in…':'Sign In'}</button>
         </form>
       </div>
     </div>
@@ -47,11 +51,11 @@ function ImgUpload({ label, value, onChange }) {
       <label>{label}</label>
       <div className="img-upload-row">
         {value && <img src={value} alt="" className="img-thumb" />}
-        <label className="btn btn-outline btn-sm" style={{ opacity: uploading ? 0.6 : 1 }}>
-          {uploading ? 'Uploading…' : value ? 'Replace' : 'Upload Image'}
-          <input type="file" accept="image/*" onChange={handle} style={{ display:'none' }} disabled={uploading} />
+        <label className="btn btn-outline btn-sm" style={{opacity:uploading?0.6:1,cursor:'pointer'}}>
+          {uploading ? 'Uploading…' : value ? 'Replace Image' : 'Upload Image'}
+          <input type="file" accept="image/*" onChange={handle} style={{display:'none'}} disabled={uploading} />
         </label>
-        {value && <button className="btn btn-sm" style={{ color:'var(--red)' }} onClick={() => onChange('')}>Remove</button>}
+        {value && <button className="btn btn-sm" style={{color:'var(--red)'}} onClick={()=>onChange('')}>Remove</button>}
       </div>
       {value && <input className="url-input" type="text" value={value} onChange={e=>onChange(e.target.value)} placeholder="or paste image URL" />}
     </div>
@@ -60,17 +64,17 @@ function ImgUpload({ label, value, onChange }) {
 
 // ─── Cake Editor ─────────────────────────────────────────────
 function CakeEditor({ cake, onSave, onCancel }) {
-  const [form, setForm] = useState(cake || { title:'',price:'',deposit_percent:30,description:'',category:'',servings:'',available:true,featured:false,image_url:'',gallery:[],allergens:[],body:'' })
+  const [f, setF] = useState(cake || {title:'',price:'',deposit_percent:30,description:'',category:'',servings:'',available:true,featured:false,image_url:'',allergens:[],body:''})
   const [saving, setSaving] = useState(false)
-  const set = (k,v) => setForm(f=>({...f,[k]:v}))
+  const set = (k,v) => setF(x=>({...x,[k]:v}))
   const save = async () => {
-    if (!form.title || !form.price) return alert('Title and price are required.')
-    setSaving(true); await saveCake({...form, price:parseFloat(form.price)}); setSaving(false); onSave()
+    if (!f.title||!f.price) return alert('Title and price required.')
+    setSaving(true); await saveCake({...f,price:parseFloat(f.price)}); setSaving(false); onSave()
   }
   return (
     <div className="editor-panel">
       <div className="editor-header">
-        <h3>{cake?.id ? 'Edit Cake' : 'New Cake'}</h3>
+        <h3>{cake?.id?'Edit Cake':'New Cake'}</h3>
         <div style={{display:'flex',gap:'0.5rem'}}>
           <button className="btn btn-outline btn-sm" onClick={onCancel}>Cancel</button>
           <button className="btn btn-sage btn-sm" onClick={save} disabled={saving}>{saving?'Saving…':'Save Cake'}</button>
@@ -78,26 +82,66 @@ function CakeEditor({ cake, onSave, onCancel }) {
       </div>
       <div className="editor-body">
         <div className="form-row-2">
-          <div className="form-field"><label>Cake Name *</label><input value={form.title} onChange={e=>set('title',e.target.value)} /></div>
+          <div className="form-field"><label>Cake Name *</label><input value={f.title} onChange={e=>set('title',e.target.value)} /></div>
           <div className="form-field"><label>Category</label>
-            <select value={form.category} onChange={e=>set('category',e.target.value)}>
+            <select value={f.category} onChange={e=>set('category',e.target.value)}>
               <option value="">Select…</option>
               {['Wedding','Birthday','Anniversary','Custom','Seasonal'].map(c=><option key={c}>{c}</option>)}
             </select>
           </div>
         </div>
         <div className="form-row-2">
-          <div className="form-field"><label>Price ($) *</label><input type="number" value={form.price} onChange={e=>set('price',e.target.value)} /></div>
-          <div className="form-field"><label>Deposit %</label><input type="number" value={form.deposit_percent} onChange={e=>set('deposit_percent',e.target.value)} /></div>
+          <div className="form-field"><label>Price ($) *</label><input type="number" value={f.price} onChange={e=>set('price',e.target.value)} /></div>
+          <div className="form-field"><label>Deposit %</label><input type="number" value={f.deposit_percent} onChange={e=>set('deposit_percent',e.target.value)} /></div>
         </div>
-        <div className="form-field"><label>Short Description</label><textarea rows={3} value={form.description} onChange={e=>set('description',e.target.value)} /></div>
-        <div className="form-field"><label>Serves</label><input value={form.servings} onChange={e=>set('servings',e.target.value)} placeholder="20-25 people" /></div>
-        <ImgUpload label="Main Image" value={form.image_url} onChange={v=>set('image_url',v)} />
-        <div className="form-field"><label>Allergens (comma separated)</label><input value={form.allergens?.join(', ')} onChange={e=>set('allergens',e.target.value.split(',').map(s=>s.trim()).filter(Boolean))} placeholder="Dairy, Gluten, Eggs" /></div>
-        <div className="form-field"><label>Full Details</label><textarea rows={6} value={form.body} onChange={e=>set('body',e.target.value)} /></div>
+        <div className="form-field"><label>Short Description</label><textarea rows={3} value={f.description} onChange={e=>set('description',e.target.value)} /></div>
+        <div className="form-field"><label>Serves</label><input value={f.servings} onChange={e=>set('servings',e.target.value)} placeholder="20-25 people" /></div>
+        <ImgUpload label="Main Image" value={f.image_url} onChange={v=>set('image_url',v)} />
+        <div className="form-field"><label>Allergens (comma separated)</label><input value={f.allergens?.join(', ')} onChange={e=>set('allergens',e.target.value.split(',').map(s=>s.trim()).filter(Boolean))} placeholder="Dairy, Gluten, Eggs" /></div>
+        <div className="form-field"><label>Full Details</label><textarea rows={6} value={f.body} onChange={e=>set('body',e.target.value)} /></div>
         <div className="toggle-row">
-          <label className="toggle"><input type="checkbox" checked={form.available} onChange={e=>set('available',e.target.checked)} /><span>Available for orders</span></label>
-          <label className="toggle"><input type="checkbox" checked={form.featured} onChange={e=>set('featured',e.target.checked)} /><span>Featured on homepage</span></label>
+          <label className="toggle"><input type="checkbox" checked={f.available} onChange={e=>set('available',e.target.checked)} /><span>Available for orders</span></label>
+          <label className="toggle"><input type="checkbox" checked={f.featured} onChange={e=>set('featured',e.target.checked)} /><span>Featured on homepage</span></label>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Book Editor ─────────────────────────────────────────────
+function BookEditor({ book, onSave, onCancel }) {
+  const [f, setF] = useState(book || {title:'',price:'',description:'',category:'Cookbook',image_url:'',buy_link:'',available:true,featured:false})
+  const [saving, setSaving] = useState(false)
+  const set = (k,v) => setF(x=>({...x,[k]:v}))
+  const save = async () => {
+    if (!f.title||!f.price) return alert('Title and price required.')
+    setSaving(true); await saveBook({...f,price:parseFloat(f.price)}); setSaving(false); onSave()
+  }
+  return (
+    <div className="editor-panel">
+      <div className="editor-header">
+        <h3>{book?.id?'Edit Book':'New Book'}</h3>
+        <div style={{display:'flex',gap:'0.5rem'}}>
+          <button className="btn btn-outline btn-sm" onClick={onCancel}>Cancel</button>
+          <button className="btn btn-sage btn-sm" onClick={save} disabled={saving}>{saving?'Saving…':'Save Book'}</button>
+        </div>
+      </div>
+      <div className="editor-body">
+        <div className="form-row-2">
+          <div className="form-field"><label>Title *</label><input value={f.title} onChange={e=>set('title',e.target.value)} /></div>
+          <div className="form-field"><label>Category</label>
+            <select value={f.category} onChange={e=>set('category',e.target.value)}>
+              {['Cookbook','Recipe Book','Other'].map(c=><option key={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="form-field"><label>Price ($) *</label><input type="number" value={f.price} onChange={e=>set('price',e.target.value)} /></div>
+        <div className="form-field"><label>Description</label><textarea rows={3} value={f.description} onChange={e=>set('description',e.target.value)} /></div>
+        <ImgUpload label="Book Cover Image" value={f.image_url} onChange={v=>set('image_url',v)} />
+        <div className="form-field"><label>Buy Link (Amazon, Etsy, etc.)</label><input value={f.buy_link} onChange={e=>set('buy_link',e.target.value)} placeholder="https://amazon.com/…" /></div>
+        <div className="toggle-row">
+          <label className="toggle"><input type="checkbox" checked={f.available} onChange={e=>set('available',e.target.checked)} /><span>Available</span></label>
+          <label className="toggle"><input type="checkbox" checked={f.featured} onChange={e=>set('featured',e.target.checked)} /><span>Featured</span></label>
         </div>
       </div>
     </div>
@@ -106,19 +150,19 @@ function CakeEditor({ cake, onSave, onCancel }) {
 
 // ─── Post Editor ─────────────────────────────────────────────
 function PostEditor({ post, onSave, onCancel }) {
-  const [form, setForm] = useState(post || { title:'',date:new Date().toISOString().split('T')[0],excerpt:'',image_url:'',external_video_url:'',tags:[],body:'' })
+  const [f, setF] = useState(post || {title:'',date:new Date().toISOString().split('T')[0],excerpt:'',image_url:'',external_video_url:'',tags:[],body:''})
   const [saving, setSaving] = useState(false)
-  const set = (k,v) => setForm(f=>({...f,[k]:v}))
+  const set = (k,v) => setF(x=>({...x,[k]:v}))
   const save = async () => {
-    if (!form.title) return alert('Title is required.')
+    if (!f.title) return alert('Title required.')
     setSaving(true)
-    await savePost({...form, tags: typeof form.tags==='string' ? form.tags.split(',').map(s=>s.trim()) : form.tags})
+    await savePost({...f, tags: typeof f.tags==='string'?f.tags.split(',').map(s=>s.trim()):f.tags})
     setSaving(false); onSave()
   }
   return (
     <div className="editor-panel">
       <div className="editor-header">
-        <h3>{post?.id ? 'Edit Post' : 'New Post'}</h3>
+        <h3>{post?.id?'Edit Post':'New Post'}</h3>
         <div style={{display:'flex',gap:'0.5rem'}}>
           <button className="btn btn-outline btn-sm" onClick={onCancel}>Cancel</button>
           <button className="btn btn-sage btn-sm" onClick={save} disabled={saving}>{saving?'Saving…':'Save Post'}</button>
@@ -126,72 +170,159 @@ function PostEditor({ post, onSave, onCancel }) {
       </div>
       <div className="editor-body">
         <div className="form-row-2">
-          <div className="form-field"><label>Title *</label><input value={form.title} onChange={e=>set('title',e.target.value)} /></div>
-          <div className="form-field"><label>Date</label><input type="date" value={form.date?.split('T')[0]} onChange={e=>set('date',e.target.value)} /></div>
+          <div className="form-field"><label>Title *</label><input value={f.title} onChange={e=>set('title',e.target.value)} /></div>
+          <div className="form-field"><label>Date</label><input type="date" value={f.date?.split('T')[0]} onChange={e=>set('date',e.target.value)} /></div>
         </div>
-        <div className="form-field"><label>Excerpt</label><textarea rows={2} value={form.excerpt} onChange={e=>set('excerpt',e.target.value)} /></div>
-        <ImgUpload label="Hero Image" value={form.image_url} onChange={v=>set('image_url',v)} />
-        <div className="form-field"><label>YouTube / Vimeo URL</label><input value={form.external_video_url} onChange={e=>set('external_video_url',e.target.value)} placeholder="https://youtube.com/..." /></div>
-        <div className="form-field"><label>Tags (comma separated)</label><input value={Array.isArray(form.tags)?form.tags.join(', '):form.tags} onChange={e=>set('tags',e.target.value)} placeholder="Tutorial, Frosting" /></div>
-        <div className="form-field"><label>Full Content</label><textarea rows={10} value={form.body} onChange={e=>set('body',e.target.value)} /></div>
+        <div className="form-field"><label>Excerpt</label><textarea rows={2} value={f.excerpt} onChange={e=>set('excerpt',e.target.value)} /></div>
+        <ImgUpload label="Hero Image" value={f.image_url} onChange={v=>set('image_url',v)} />
+        <div className="form-field"><label>YouTube/Vimeo URL</label><input value={f.external_video_url} onChange={e=>set('external_video_url',e.target.value)} placeholder="https://youtube.com/…" /></div>
+        <div className="form-field"><label>Tags (comma separated)</label><input value={Array.isArray(f.tags)?f.tags.join(', '):f.tags} onChange={e=>set('tags',e.target.value)} /></div>
+        <div className="form-field"><label>Full Content</label><textarea rows={10} value={f.body} onChange={e=>set('body',e.target.value)} /></div>
       </div>
     </div>
   )
 }
 
-// ─── Visual Calendar Editor ───────────────────────────────────
+// ─── Calendar Editor with scrollable calendar + time dropdowns ──
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const MONTHS_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December']
+const CAL_DAYS     = ['Su','Mo','Tu','We','Th','Fr','Sa']
+const HOURS   = ['6','7','8','9','10','11','12','1','2','3','4','5','6','7','8','9']
+const MINUTES = ['00','15','30','45']
+const AMPM    = ['AM','PM']
+
+function CalPicker({ onSelect }) {
+  const today = new Date()
+  const [year, setYear]   = useState(today.getFullYear())
+  const [month, setMonth] = useState(today.getMonth())
+
+  const firstDay    = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month+1, 0).getDate()
+  const cells = []
+  for (let i=0; i<firstDay; i++) cells.push(null)
+  for (let d=1; d<=daysInMonth; d++) {
+    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+    const isPast = new Date(ds) <= new Date(today.toDateString())
+    cells.push({ d, ds, isPast })
+  }
+
+  const prev = () => { if(month===0){setYear(y=>y-1);setMonth(11)}else setMonth(m=>m-1) }
+  const next = () => { if(month===11){setYear(y=>y+1);setMonth(0)}else setMonth(m=>m+1) }
+
+  return (
+    <div className="cal-picker">
+      <div className="cal-picker__nav">
+        <button onClick={prev} className="btn btn-outline btn-sm">‹</button>
+        <span>{MONTHS_FULL[month]} {year}</span>
+        <button onClick={next} className="btn btn-outline btn-sm">›</button>
+      </div>
+      <div className="cal-picker__grid">
+        {CAL_DAYS.map(d=><div key={d} className="cp-dayname">{d}</div>)}
+        {cells.map((cell,i)=>{
+          if (!cell) return <div key={`e${i}`} className="cp-cell cp-cell--empty" />
+          return (
+            <button key={cell.ds} disabled={cell.isPast}
+              className={`cp-cell ${cell.isPast?'cp-cell--past':'cp-cell--active'}`}
+              onClick={()=>onSelect(cell.ds)}
+            >{cell.d}</button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function TimeDropdown({ value, onChange }) {
+  const [h, setH] = useState('10')
+  const [m, setM] = useState('00')
+  const [ap, setAp] = useState('AM')
+
+  useEffect(() => { onChange(`${h}:${m} ${ap}`) }, [h, m, ap])
+
+  return (
+    <div className="time-dropdown">
+      <select value={h} onChange={e=>setH(e.target.value)}>
+        {HOURS.map((hr,i)=><option key={i} value={hr}>{hr}</option>)}
+      </select>
+      <span>:</span>
+      <select value={m} onChange={e=>setM(e.target.value)}>
+        {MINUTES.map(mn=><option key={mn} value={mn}>{mn}</option>)}
+      </select>
+      <select value={ap} onChange={e=>setAp(e.target.value)}>
+        {AMPM.map(a=><option key={a}>{a}</option>)}
+      </select>
+    </div>
+  )
+}
+
 function CalendarEditor() {
   const [avail, setAvail] = useState([])
-  const [newDate, setNewDate] = useState('')
-  const [newSlots, setNewSlots] = useState('')
+  const [showPicker, setShowPicker] = useState(false)
+  const [pendingDate, setPendingDate] = useState(null)
+  const [pendingSlots, setPendingSlots] = useState([])
+  const [currentTime, setCurrentTime] = useState('10:00 AM')
   const today = new Date()
-  const [calYear, setCalYear] = useState(today.getFullYear())
-  const [calMonth, setCalMonth] = useState(today.getMonth())
-  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
-  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+  const [year, setYear]   = useState(today.getFullYear())
+  const [month, setMonth] = useState(today.getMonth())
 
   const load = () => getAvailability().then(setAvail)
   useEffect(()=>{ load() },[])
 
   const availMap = {}
-  avail.forEach(a => { availMap[a.date] = a })
+  avail.forEach(a=>{ availMap[a.date]=a })
 
-  const firstDay = new Date(calYear, calMonth, 1).getDay()
-  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate()
+  const firstDay    = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month+1, 0).getDate()
   const cells = []
   for (let i=0; i<firstDay; i++) cells.push(null)
   for (let d=1; d<=daysInMonth; d++) {
-    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
-    cells.push({ d, dateStr, row: availMap[dateStr]||null })
+    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+    cells.push({ d, ds, row: availMap[ds]||null })
   }
 
-  const addDate = async () => {
-    if (!newDate) return
-    const slots = newSlots.split(',').map(s=>s.trim()).filter(Boolean)
-    await saveAvailability({ date:newDate, slots, booked:false })
-    setNewDate(''); setNewSlots(''); load()
+  const handlePickDate = ds => {
+    setPendingDate(ds)
+    setPendingSlots([])
+    setShowPicker(false)
   }
+
+  const addTimeSlot = () => {
+    if (!currentTime) return
+    if (!pendingSlots.includes(currentTime)) setPendingSlots(s=>[...s, currentTime])
+  }
+
+  const removeSlot = slot => setPendingSlots(s=>s.filter(x=>x!==slot))
+
+  const saveDate = async () => {
+    if (!pendingDate) return alert('Pick a date first.')
+    await saveAvailability({ date:pendingDate, slots:pendingSlots, booked:false })
+    setPendingDate(null); setPendingSlots([]); load()
+  }
+
   const toggleBooked = async row => { await saveAvailability({...row, booked:!row.booked}); load() }
-  const removeDate = async id => { if (!confirm('Remove this date?')) return; await deleteAvailability(id); load() }
+  const removeDate   = async id  => { if (!confirm('Remove this date?')) return; await deleteAvailability(id); load() }
+
+  const fmtDate = d => new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
 
   return (
     <div>
       <h3 className="tab-title">Manage Availability</h3>
-      <p style={{color:'var(--text-muted)',marginBottom:'1.5rem',fontSize:'0.9rem'}}>These are the dates customers can choose for cake pickup. Add dates here and they'll appear in the order calendar.</p>
+      <p style={{color:'var(--text-muted)',marginBottom:'1.5rem',fontSize:'0.9rem'}}>Add dates customers can pick for pickup or consultation. They only see dates you add here.</p>
 
+      {/* Month view */}
       <div className="admin-cal-nav">
-        <button className="btn btn-outline btn-sm" onClick={()=>{ if(calMonth===0){setCalYear(y=>y-1);setCalMonth(11)}else setCalMonth(m=>m-1) }}>‹ Prev</button>
-        <span className="admin-cal-month">{MONTHS[calMonth]} {calYear}</span>
-        <button className="btn btn-outline btn-sm" onClick={()=>{ if(calMonth===11){setCalYear(y=>y+1);setCalMonth(0)}else setCalMonth(m=>m+1) }}>Next ›</button>
+        <button className="btn btn-outline btn-sm" onClick={()=>{if(month===0){setYear(y=>y-1);setMonth(11)}else setMonth(m=>m-1)}}>‹ Prev</button>
+        <span className="admin-cal-month">{MONTHS_FULL[month]} {year}</span>
+        <button className="btn btn-outline btn-sm" onClick={()=>{if(month===11){setYear(y=>y+1);setMonth(0)}else setMonth(m=>m+1)}}>Next ›</button>
       </div>
 
       <div className="admin-cal-grid">
-        {DAYS.map(d=><div key={d} className="admin-cal-dayname">{d}</div>)}
+        {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=><div key={d} className="admin-cal-dayname">{d}</div>)}
         {cells.map((cell,i)=>{
           if (!cell) return <div key={`e${i}`} className="admin-cal-cell admin-cal-cell--empty" />
-          const {d,dateStr,row} = cell
+          const {d, ds, row} = cell
           return (
-            <div key={dateStr} className={`admin-cal-cell ${row?(row.booked?'admin-cal-cell--booked':'admin-cal-cell--avail'):''}`}>
+            <div key={ds} className={`admin-cal-cell ${row?(row.booked?'admin-cal-cell--booked':'admin-cal-cell--avail'):''}`}>
               <span className="admin-cal-num">{d}</span>
               {row && (
                 <div className="admin-cal-info">
@@ -200,7 +331,7 @@ function CalendarEditor() {
                     : <span className="admin-cal-tag avail">{row.slots?.length||0} slot{row.slots?.length!==1?'s':''}</span>
                   }
                   <div className="admin-cal-actions">
-                    <button title={row.booked?'Mark available':'Mark booked'} onClick={()=>toggleBooked(row)}>{row.booked?'✓':'✕'}</button>
+                    <button title={row.booked?'Mark open':'Mark booked'} onClick={()=>toggleBooked(row)}>{row.booked?'↩':'✕'}</button>
                     <button title="Remove" onClick={()=>removeDate(row.id)} style={{color:'var(--red)'}}>🗑</button>
                   </div>
                 </div>
@@ -210,13 +341,50 @@ function CalendarEditor() {
         })}
       </div>
 
+      {/* Add Date Panel */}
       <div className="add-date-form">
         <h4>Add Available Date</h4>
-        <div className="form-row-2">
-          <div className="form-field"><label>Date</label><input type="date" value={newDate} onChange={e=>setNewDate(e.target.value)} /></div>
-          <div className="form-field"><label>Time Slots (comma separated, optional)</label><input value={newSlots} onChange={e=>setNewSlots(e.target.value)} placeholder="10:00 AM, 2:00 PM" /></div>
+
+        {/* Date picker button */}
+        <div className="form-field">
+          <label>Pick a Date</label>
+          <div style={{display:'flex',gap:'0.75rem',alignItems:'center',flexWrap:'wrap'}}>
+            <button className="btn btn-outline" onClick={()=>setShowPicker(p=>!p)}>
+              {pendingDate ? `📅 ${fmtDate(pendingDate)}` : '📅 Choose Date'}
+            </button>
+            {pendingDate && <button className="btn btn-sm" style={{color:'var(--red)'}} onClick={()=>setPendingDate(null)}>Clear</button>}
+          </div>
+          {showPicker && (
+            <div className="cal-picker-wrap">
+              <CalPicker onSelect={handlePickDate} />
+            </div>
+          )}
         </div>
-        <button className="btn btn-sage" onClick={addDate} disabled={!newDate}>Add Date</button>
+
+        {/* Time slot builder */}
+        {pendingDate && (
+          <>
+            <div className="form-field">
+              <label>Add Time Slots</label>
+              <div style={{display:'flex',gap:'0.75rem',alignItems:'center',flexWrap:'wrap'}}>
+                <TimeDropdown value={currentTime} onChange={setCurrentTime} />
+                <button className="btn btn-outline btn-sm" onClick={addTimeSlot}>+ Add Slot</button>
+              </div>
+              {pendingSlots.length > 0 && (
+                <div className="pending-slots">
+                  {pendingSlots.map(s=>(
+                    <span key={s} className="pending-slot">
+                      {s} <button onClick={()=>removeSlot(s)}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button className="btn btn-sage" onClick={saveDate}>
+              Save {fmtDate(pendingDate)}{pendingSlots.length > 0 ? ` with ${pendingSlots.length} slot${pendingSlots.length!==1?'s':''}` : ' (no slots)'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
@@ -224,17 +392,14 @@ function CalendarEditor() {
 
 // ─── Orders Dashboard ─────────────────────────────────────────
 function OrdersDashboard() {
-  const [orders, setOrders] = useState([])
+  const [orders, setOrders]   = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter]   = useState('all')
 
   const load = () => getOrders().then(d=>{ setOrders(d); setLoading(false) })
   useEffect(()=>{ load() },[])
 
-  const fmtDate = d => new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})
-  const fmtTime = d => new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})
-
-  const STATUS_COLORS = {
+  const STATUS = {
     pending_payment: { bg:'#fff8e6', color:'#b7770a', label:'Awaiting Payment' },
     paid:            { bg:'#e8f5e9', color:'#2e7d32', label:'Deposit Paid' },
     confirmed:       { bg:'#e3f2fd', color:'#1565c0', label:'Confirmed' },
@@ -242,74 +407,55 @@ function OrdersDashboard() {
     cancelled:       { bg:'#ffebee', color:'#c62828', label:'Cancelled' },
   }
 
-  const filtered = filter === 'all' ? orders : orders.filter(o=>o.status===filter)
-
-  const changeStatus = async (id, status) => { await updateOrderStatus(id, status); load() }
-  const removeOrder = async id => { if (!confirm('Delete this order?')) return; await deleteOrder(id); load() }
+  const filtered = filter==='all' ? orders : orders.filter(o=>o.status===filter)
+  const fmtDate  = d => new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})
+  const fmtTime  = d => new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})
 
   return (
     <div>
       <h3 className="tab-title">Orders</h3>
-
-      {/* Summary cards */}
       <div className="order-summary-cards">
-        {[
-          { label:'All Orders', key:'all', icon:'📋' },
-          { label:'Awaiting Payment', key:'pending_payment', icon:'⏳' },
-          { label:'Deposit Paid', key:'paid', icon:'✅' },
-          { label:'Confirmed', key:'confirmed', icon:'📅' },
-        ].map(card => (
-          <button key={card.key} className={`summary-card ${filter===card.key?'active':''}`} onClick={()=>setFilter(card.key)}>
-            <span className="summary-card__icon">{card.icon}</span>
-            <span className="summary-card__count">{card.key==='all'?orders.length:orders.filter(o=>o.status===card.key).length}</span>
-            <span className="summary-card__label">{card.label}</span>
+        {[{label:'All',key:'all',icon:'📋'},{label:'Awaiting Payment',key:'pending_payment',icon:'⏳'},{label:'Deposit Paid',key:'paid',icon:'✅'},{label:'Confirmed',key:'confirmed',icon:'📅'}].map(c=>(
+          <button key={c.key} className={`summary-card ${filter===c.key?'active':''}`} onClick={()=>setFilter(c.key)}>
+            <span className="summary-card__icon">{c.icon}</span>
+            <span className="summary-card__count">{c.key==='all'?orders.length:orders.filter(o=>o.status===c.key).length}</span>
+            <span className="summary-card__label">{c.label}</span>
           </button>
         ))}
       </div>
-
-      {loading ? <p className="loading">Loading orders…</p>
-        : filtered.length === 0
-          ? <div className="empty-msg">
-              {filter==='all' ? 'No orders yet — they\'ll appear here when customers place them.' : `No ${STATUS_COLORS[filter]?.label||filter} orders.`}
-            </div>
-          : (
+      {loading ? <p className="loading">Loading…</p>
+        : filtered.length===0 ? <p className="empty-msg">No orders here yet.</p>
+        : (
           <div className="orders-list">
-            {filtered.map(order => {
-              const s = STATUS_COLORS[order.status] || { bg:'#f5f5f5', color:'#666', label: order.status }
+            {filtered.map(order=>{
+              const s = STATUS[order.status]||{bg:'#f5f5f5',color:'#666',label:order.status}
               return (
                 <div key={order.id} className="order-card">
-                  <div className="order-card__img">
-                    {order.cake_image ? <img src={order.cake_image} alt={order.cake_title} /> : <div className="img-placeholder">🎂</div>}
-                  </div>
+                  <div className="order-card__img">{order.cake_image?<img src={order.cake_image} alt="" />:<div className="img-placeholder">🎂</div>}</div>
                   <div className="order-card__info">
                     <div className="order-card__top">
-                      <strong className="order-card__name">{order.customer_name}</strong>
-                      <span className="order-status-badge" style={{background:s.bg, color:s.color}}>{s.label}</span>
+                      <strong>{order.customer_name}</strong>
+                      <span className="order-status-badge" style={{background:s.bg,color:s.color}}>{s.label}</span>
                     </div>
                     <div className="order-card__cake">🎂 {order.cake_title}</div>
                     <div className="order-card__details">
                       <span>📅 Pickup: <strong>{fmtDate(order.pickup_date)}</strong></span>
                       <span>💰 Deposit: <strong>${Number(order.deposit_amount).toFixed(2)}</strong></span>
                       <span>✉️ {order.customer_email}</span>
-                      {order.customer_phone && <span>📞 {order.customer_phone}</span>}
+                      {order.customer_phone&&<span>📞 {order.customer_phone}</span>}
                     </div>
-                    {order.notes && <div className="order-card__notes">💬 {order.notes}</div>}
+                    {order.notes&&<div className="order-card__notes">💬 {order.notes}</div>}
                     <div className="order-card__meta">Ordered {fmtTime(order.created_at)}</div>
                   </div>
                   <div className="order-card__actions">
-                    <select
-                      value={order.status}
-                      onChange={e=>changeStatus(order.id, e.target.value)}
-                      className="status-select"
-                      style={{borderColor: s.color, color: s.color}}
-                    >
+                    <select value={order.status} onChange={e=>{ updateOrderStatus(order.id,e.target.value).then(load) }} className="status-select" style={{borderColor:s.color,color:s.color}}>
                       <option value="pending_payment">Awaiting Payment</option>
                       <option value="paid">Deposit Paid</option>
                       <option value="confirmed">Confirmed</option>
                       <option value="completed">Completed</option>
                       <option value="cancelled">Cancelled</option>
                     </select>
-                    <button className="btn btn-danger btn-sm" onClick={()=>removeOrder(order.id)}>Delete</button>
+                    <button className="btn btn-danger btn-sm" onClick={()=>{ if(confirm('Delete order?')) deleteOrder(order.id).then(load) }}>Delete</button>
                   </div>
                 </div>
               )
@@ -321,192 +467,271 @@ function OrdersDashboard() {
   )
 }
 
-// ─── Page Editor ─────────────────────────────────────────────
-// ─── Page Editor ─────────────────────────────────────────────
-function PageEditor() {
-  const PAGES = [
-    { key:'page_home',    label:'🏠 Home Page' },
-    { key:'page_cakes',   label:'🎂 Cakes Page' },
-    { key:'page_recipes', label:'📖 Recipes Page' },
-    { key:'page_booking', label:'📅 Booking Page' },
-  ]
-  const [activePage, setActivePage] = useState('page_home')
-  const [content, setContent] = useState({})
-  const [site, setSite] = useState(null)
-  const [payments, setPayments] = useState(null)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+// ─── Contacts Dashboard ───────────────────────────────────────
+function ContactsDashboard() {
+  const [contacts, setContacts] = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [filter, setFilter]     = useState('all')
 
-  useEffect(() => {
-    PAGES.forEach(p => getSetting(p.key).then(v => setContent(c => ({ ...c, [p.key]: v || {} }))))
-    getSetting('homepage').then(d => setSite(d || { bakeryName:"Pam's Cooking for Real Life", tagline:'', aboutStory:'', phone:'', email:'', instagram:'', location:'' }))
-    getSetting('payments').then(d => setPayments(d || { method:'PayPal', payment_id:'', custom_instructions:'' }))
-  }, [])
+  const load = () => getContactRequests().then(d=>{ setContacts(d); setLoading(false) })
+  useEffect(()=>{ load() },[])
 
-  const setC = (k, v) => setContent(c => ({ ...c, [activePage]: { ...c[activePage], [k]: v } }))
-  const setS = (k, v) => setSite(s => ({ ...s, [k]: v }))
-  const setP = (k, v) => setPayments(p => ({ ...p, [k]: v }))
-
-  const save = async () => {
-    setSaving(true)
-    await setSetting(activePage, content[activePage] || {})
-    if (site)     await setSetting('homepage', site)
-    if (payments) await setSetting('payments', payments)
-    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 3000)
+  const STATUS_COLORS = {
+    new:         { bg:'#e3f2fd', color:'#1565c0', label:'New' },
+    in_progress: { bg:'#fff8e6', color:'#b7770a', label:'In Progress' },
+    done:        { bg:'#e8f5e9', color:'#2e7d32', label:'Done' },
   }
 
-  const pg = content[activePage] || {}
-
-  if (!site || !payments) return <p className="loading">Loading…</p>
+  const filtered   = filter==='all' ? contacts : contacts.filter(c=>c.status===filter)
+  const fmtDate    = d => d ? new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'
+  const fmtTime    = d => new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})
+  const newCount   = contacts.filter(c=>c.status==='new').length
 
   return (
     <div>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.5rem', flexWrap:'wrap', gap:'1rem' }}>
-        <h3 className="tab-title" style={{ marginBottom:0 }}>Edit Pages</h3>
-        <button className="btn btn-sage" onClick={save} disabled={saving}>
-          {saving ? 'Saving…' : saved ? '✓ Saved!' : 'Save Changes'}
-        </button>
+      <div style={{display:'flex',alignItems:'center',gap:'1rem',marginBottom:'0.5rem',flexWrap:'wrap'}}>
+        <h3 className="tab-title" style={{marginBottom:0}}>Messages & Booking Requests</h3>
+        {newCount > 0 && <span className="new-badge">{newCount} new</span>}
       </div>
 
-      <div className="page-tabs">
-        {PAGES.map(p => (
-          <button key={p.key} className={`page-tab ${activePage===p.key?'active':''}`} onClick={() => setActivePage(p.key)}>{p.label}</button>
+      <div className="filter-row">
+        {['all','new','in_progress','done'].map(f=>(
+          <button key={f} className={`filter-btn ${filter===f?'active':''}`} onClick={()=>setFilter(f)}>
+            {f==='all'?'All':STATUS_COLORS[f]?.label||f}
+            {f==='new'&&newCount>0&&<span className="filter-count">{newCount}</span>}
+          </button>
         ))}
       </div>
 
-      <div className="settings-section">
+      {loading ? <p className="loading">Loading…</p>
+        : filtered.length===0 ? <p className="empty-msg">No messages here.</p>
+        : (
+          <div className="contacts-list">
+            {filtered.map(c=>{
+              const s = STATUS_COLORS[c.status]||{bg:'#f5f5f5',color:'#666',label:c.status}
+              return (
+                <div key={c.id} className={`contact-card ${c.status==='new'?'contact-card--new':''}`}>
+                  <div className="contact-card__info">
+                    <div className="contact-card__top">
+                      <strong>{c.name}</strong>
+                      <span className="order-status-badge" style={{background:s.bg,color:s.color}}>{s.label}</span>
+                    </div>
+                    <div className="contact-card__details">
+                      <span>✉️ <a href={`mailto:${c.email}`}>{c.email}</a></span>
+                      {c.phone&&<span>📞 <a href={`tel:${c.phone}`}>{c.phone}</a></span>}
+                      {c.request_date&&<span>📅 Requested: {fmtDate(c.request_date)}{c.request_slot?` at ${c.request_slot}`:''}</span>}
+                    </div>
+                    {c.message&&<div className="contact-card__message">"{c.message}"</div>}
+                    <div className="order-card__meta">Received {fmtTime(c.created_at)}</div>
+                  </div>
+                  <div className="order-card__actions">
+                    <select value={c.status} onChange={e=>{ updateContactStatus(c.id,e.target.value).then(load) }} className="status-select" style={{borderColor:s.color,color:s.color}}>
+                      <option value="new">New</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="done">Done</option>
+                    </select>
+                    <a href={`mailto:${c.email}`} className="btn btn-outline btn-sm">Reply →</a>
+                    <button className="btn btn-danger btn-sm" onClick={()=>{ if(confirm('Delete?')) deleteContactRequest(c.id).then(load) }}>Delete</button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )
+      }
+    </div>
+  )
+}
 
-        {/* ── HOME PAGE ── */}
-        {activePage === 'page_home' && (
-          <>
-            <h4>🖼 Hero Section</h4>
-            <div className="form-field"><label>Hero Title</label>
-              <input value={pg.hero_title || site.bakeryName || ''} onChange={e => { setC('hero_title', e.target.value); setS('bakeryName', e.target.value) }} placeholder="Pam's Cooking for Real Life" />
-            </div>
-            <div className="form-field"><label>Hero Tagline (shown under title)</label>
-              <input value={pg.hero_subtitle || site.tagline || ''} onChange={e => { setC('hero_subtitle', e.target.value); setS('tagline', e.target.value) }} />
-            </div>
-            <ImgUpload label="Hero Background Image" value={pg.hero_image || ''} onChange={v => setC('hero_image', v)} />
+// ─── Page + Theme Editor ──────────────────────────────────────
+const FONT_OPTIONS = [
+  'Dancing Script','Playfair Display','Lora','Cormorant Garamond',
+  'Pacifico','Satisfy','Great Vibes','Abril Fatface',
+  'Lato','Nunito','Poppins','Merriweather'
+]
+const PAGES_LIST = [
+  {key:'page_home',    label:'🏠 Home'},
+  {key:'page_cakes',   label:'🎂 Cakes'},
+  {key:'page_books',   label:'📚 Books'},
+  {key:'page_recipes', label:'📖 Recipes'},
+  {key:'page_booking', label:'📅 Booking'},
+]
 
-            <h4 style={{ marginTop:'0.75rem' }}>🎂 Featured Cakes Section</h4>
-            <div className="form-field"><label>Section Heading</label>
-              <input value={pg.featured_heading || ''} onChange={e => setC('featured_heading', e.target.value)} placeholder="Featured Cakes" />
-            </div>
-            <div className="form-field"><label>Section Subtext</label>
-              <input value={pg.featured_subtext || ''} onChange={e => setC('featured_subtext', e.target.value)} />
-            </div>
+function PageEditor() {
+  const [activePage, setActivePage] = useState('page_home')
+  const [content, setContent] = useState({})
+  const [site, setSite]       = useState(null)
+  const [payments, setPayments] = useState(null)
+  const [theme, setTheme]     = useState(null)
+  const [saving, setSaving]   = useState(false)
+  const [saved,  setSaved]    = useState(false)
 
-            <h4 style={{ marginTop:'0.75rem' }}>📖 About / Story Section</h4>
-            <div className="form-field"><label>About Section Heading</label>
-              <input value={pg.about_heading || ''} onChange={e => setC('about_heading', e.target.value)} placeholder="Real food. Real love." />
-            </div>
-            <ImgUpload label="About Section Image" value={pg.about_image || ''} onChange={v => setC('about_image', v)} />
-            <div className="form-field"><label>Your Story (blank line = new paragraph)</label>
-              <textarea rows={7} value={site.aboutStory || ''} onChange={e => setS('aboutStory', e.target.value)} placeholder="Write about yourself and your baking…" />
-            </div>
+  useEffect(()=>{
+    PAGES_LIST.forEach(p=>getSetting(p.key).then(v=>setContent(c=>({...c,[p.key]:v||{}}))))
+    getSetting('homepage').then(d=>setSite(d||{bakeryName:"Pam's Cooking for Real Life",tagline:'',aboutStory:'',phone:'',email:'',instagram:'',location:'Elon, NC'}))
+    getSetting('payments').then(d=>setPayments(d||{method:'PayPal',payment_id:'',custom_instructions:''}))
+    getSetting('theme').then(d=>setTheme(d||{color_primary:'#2D5233',color_secondary:'#6B9E70',color_accent:'#4A7A50',color_bg:'#FDFAF4',color_bg_dark:'#F0EBE0',color_text:'#2A3D2E',color_nav:'#2D5233',font_heading:'Dancing Script',font_body:'Lato',button_radius:'100px',card_radius:'6px'}))
+  },[])
 
-            <h4 style={{ marginTop:'0.75rem' }}>📣 Bottom Call-to-Action</h4>
-            <div className="form-field"><label>CTA Heading</label>
-              <input value={pg.cta_heading || ''} onChange={e => setC('cta_heading', e.target.value)} placeholder="Ready for your dream cake?" />
-            </div>
-            <div className="form-field"><label>CTA Subtext</label>
-              <input value={pg.cta_subtext || ''} onChange={e => setC('cta_subtext', e.target.value)} />
-            </div>
+  const setC = (k,v) => setContent(c=>({...c,[activePage]:{...c[activePage],[k]:v}}))
+  const setS = (k,v) => setSite(s=>({...s,[k]:v}))
+  const setP = (k,v) => setPayments(p=>({...p,[k]:v}))
+  const setT = (k,v) => { setTheme(t=>({...t,[k]:v})); applyTheme({...theme,[k]:v}); if(k==='font_heading'||k==='font_body') loadFont(v) }
 
-            <h4 style={{ marginTop:'0.75rem' }}>📞 Contact Info</h4>
-            <div className="form-row-2">
-              <div className="form-field"><label>Phone</label><input value={site.phone||''} onChange={e=>setS('phone',e.target.value)} placeholder="(336) 555-0100" /></div>
-              <div className="form-field"><label>Email</label><input value={site.email||''} onChange={e=>setS('email',e.target.value)} /></div>
-            </div>
-            <div className="form-row-2">
-              <div className="form-field"><label>Location</label><input value={site.location||''} onChange={e=>setS('location',e.target.value)} placeholder="Burlington, NC" /></div>
-              <div className="form-field"><label>Instagram Handle (no @)</label><input value={site.instagram||''} onChange={e=>setS('instagram',e.target.value)} /></div>
-            </div>
-          </>
-        )}
+  const save = async () => {
+    setSaving(true)
+    await setSetting(activePage, content[activePage]||{})
+    if (site)     await setSetting('homepage', site)
+    if (payments) await setSetting('payments', payments)
+    if (theme)    await setSetting('theme', theme)
+    setSaving(false); setSaved(true); setTimeout(()=>setSaved(false),3000)
+  }
 
-        {/* ── CAKES PAGE ── */}
-        {activePage === 'page_cakes' && (
-          <>
-            <h4>Page Header</h4>
-            <div className="form-field"><label>Page Heading</label><input value={pg.heading||''} onChange={e=>setC('heading',e.target.value)} placeholder="Cake Catalog" /></div>
-            <div className="form-field"><label>Page Subtext</label><input value={pg.subtext||''} onChange={e=>setC('subtext',e.target.value)} /></div>
-            <p className="settings-hint">💡 To add, edit, or remove individual cakes, use the 🎂 Cakes tab.</p>
-          </>
-        )}
+  const pg = content[activePage] || {}
+  if (!site||!payments||!theme) return <p className="loading">Loading…</p>
 
-        {/* ── RECIPES PAGE ── */}
-        {activePage === 'page_recipes' && (
-          <>
-            <h4>Page Header</h4>
-            <div className="form-field"><label>Page Heading</label><input value={pg.heading||''} onChange={e=>setC('heading',e.target.value)} placeholder="Recipes & Tips" /></div>
-            <div className="form-field"><label>Page Subtext</label><input value={pg.subtext||''} onChange={e=>setC('subtext',e.target.value)} /></div>
-            <p className="settings-hint">💡 To add, edit, or remove individual recipes, use the 📖 Recipes tab.</p>
-          </>
-        )}
-
-        {/* ── BOOKING PAGE ── */}
-        {activePage === 'page_booking' && (
-          <>
-            <h4>Page Header</h4>
-            <div className="form-field"><label>Page Heading</label><input value={pg.heading||''} onChange={e=>setC('heading',e.target.value)} placeholder="Book a Consultation" /></div>
-            <div className="form-field"><label>Page Subtext</label><input value={pg.subtext||''} onChange={e=>setC('subtext',e.target.value)} /></div>
-            <div className="form-field">
-              <label>Sidebar Info (one bullet per line)</label>
-              <textarea rows={6} value={pg.sidebar_text||''} onChange={e=>setC('sidebar_text',e.target.value)} placeholder={"30-minute phone or video call\nDiscuss your cake design\nPricing and deposit details"} />
-            </div>
-            <p className="settings-hint">💡 To manage available dates, use the 📅 Calendar tab.</p>
-          </>
-        )}
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1.5rem',flexWrap:'wrap',gap:'1rem'}}>
+        <h3 className="tab-title" style={{marginBottom:0}}>Edit Pages & Settings</h3>
+        <button className="btn btn-sage" onClick={save} disabled={saving}>{saving?'Saving…':saved?'✓ Saved!':'Save All Changes'}</button>
       </div>
 
-      {/* ── SITE-WIDE STYLE SETTINGS (always shown) ── */}
-      <div className="settings-section" style={{ marginTop:'1.5rem' }}>
-        <h4>🎨 Site Colors & Fonts</h4>
-        <p style={{ fontSize:'0.85rem', color:'var(--text-muted)', marginBottom:'1rem' }}>These apply across the whole site.</p>
-        <div className="form-row-2">
-          <div className="form-field">
-            <label>Primary Color (green buttons, accents)</label>
-            <div style={{ display:'flex', gap:'0.75rem', alignItems:'center' }}>
-              <input type="color" value={pg.color_primary || '#2D5233'} onChange={e => { setC('color_primary',e.target.value); document.documentElement.style.setProperty('--sage-dark', e.target.value) }} style={{ width:48, height:36, padding:2, border:'2px solid var(--sage-pale)', borderRadius:'var(--radius)', cursor:'pointer' }} />
-              <input value={pg.color_primary||'#2D5233'} onChange={e=>{ setC('color_primary',e.target.value); document.documentElement.style.setProperty('--sage-dark',e.target.value) }} placeholder="#2D5233" style={{ flex:1 }} className="url-input" />
-            </div>
+      <div className="page-tabs">
+        {PAGES_LIST.map(p=>(
+          <button key={p.key} className={`page-tab ${activePage===p.key?'active':''}`} onClick={()=>setActivePage(p.key)}>{p.label}</button>
+        ))}
+      </div>
+
+      {/* ── HOME ── */}
+      {activePage==='page_home' && (
+        <div className="settings-section">
+          <h4>🖼 Hero Section</h4>
+          <div className="form-field"><label>Site / Bakery Name</label><input value={site.bakeryName||''} onChange={e=>setS('bakeryName',e.target.value)} /></div>
+          <div className="form-field"><label>Hero Tagline</label><input value={site.tagline||''} onChange={e=>setS('tagline',e.target.value)} /></div>
+          <ImgUpload label="Hero Background Photo" value={pg.hero_image||''} onChange={v=>setC('hero_image',v)} />
+          <h4>🎂 Featured Cakes Section</h4>
+          <div className="form-field"><label>Section Heading</label><input value={pg.featured_heading||''} onChange={e=>setC('featured_heading',e.target.value)} placeholder="Featured Cakes" /></div>
+          <div className="form-field"><label>Section Subtext</label><input value={pg.featured_subtext||''} onChange={e=>setC('featured_subtext',e.target.value)} /></div>
+          <h4>📖 About / Story Section</h4>
+          <div className="form-field"><label>About Heading</label><input value={pg.about_heading||''} onChange={e=>setC('about_heading',e.target.value)} placeholder="Real food. Real love." /></div>
+          <ImgUpload label="About Section Photo" value={pg.about_image||''} onChange={v=>setC('about_image',v)} />
+          <div className="form-field"><label>Your Story (blank line = new paragraph)</label><textarea rows={7} value={site.aboutStory||''} onChange={e=>setS('aboutStory',e.target.value)} /></div>
+          <h4>📣 Bottom Call-to-Action</h4>
+          <div className="form-field"><label>CTA Heading</label><input value={pg.cta_heading||''} onChange={e=>setC('cta_heading',e.target.value)} placeholder="Ready for your dream cake?" /></div>
+          <div className="form-field"><label>CTA Subtext</label><input value={pg.cta_subtext||''} onChange={e=>setC('cta_subtext',e.target.value)} /></div>
+          <h4>📞 Contact Info</h4>
+          <div className="form-row-2">
+            <div className="form-field"><label>Phone</label><input value={site.phone||''} onChange={e=>setS('phone',e.target.value)} /></div>
+            <div className="form-field"><label>Email</label><input value={site.email||''} onChange={e=>setS('email',e.target.value)} /></div>
           </div>
-          <div className="form-field">
-            <label>Secondary Color (lighter green)</label>
-            <div style={{ display:'flex', gap:'0.75rem', alignItems:'center' }}>
-              <input type="color" value={pg.color_secondary || '#6B9E70'} onChange={e => { setC('color_secondary',e.target.value); document.documentElement.style.setProperty('--sage', e.target.value) }} style={{ width:48, height:36, padding:2, border:'2px solid var(--sage-pale)', borderRadius:'var(--radius)', cursor:'pointer' }} />
-              <input value={pg.color_secondary||'#6B9E70'} onChange={e=>{ setC('color_secondary',e.target.value); document.documentElement.style.setProperty('--sage',e.target.value) }} placeholder="#6B9E70" style={{ flex:1 }} className="url-input" />
-            </div>
+          <div className="form-row-2">
+            <div className="form-field"><label>Location</label><input value={site.location||''} onChange={e=>setS('location',e.target.value)} placeholder="Elon, NC" /></div>
+            <div className="form-field"><label>Instagram (no @)</label><input value={site.instagram||''} onChange={e=>setS('instagram',e.target.value)} /></div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CAKES ── */}
+      {activePage==='page_cakes' && (
+        <div className="settings-section">
+          <h4>Page Header</h4>
+          <div className="form-field"><label>Heading</label><input value={pg.heading||''} onChange={e=>setC('heading',e.target.value)} placeholder="Cake Catalog" /></div>
+          <div className="form-field"><label>Subtext</label><input value={pg.subtext||''} onChange={e=>setC('subtext',e.target.value)} /></div>
+          <p className="settings-hint">💡 Add/edit/remove individual cakes in the 🎂 Cakes tab.</p>
+        </div>
+      )}
+
+      {/* ── BOOKS ── */}
+      {activePage==='page_books' && (
+        <div className="settings-section">
+          <h4>Page Header</h4>
+          <div className="form-field"><label>Heading</label><input value={pg.heading||''} onChange={e=>setC('heading',e.target.value)} placeholder="Books & Cookbooks" /></div>
+          <div className="form-field"><label>Subtext</label><input value={pg.subtext||''} onChange={e=>setC('subtext',e.target.value)} /></div>
+          <div className="form-field"><label>Intro Paragraph (optional)</label><textarea rows={4} value={pg.intro||''} onChange={e=>setC('intro',e.target.value)} placeholder="A little intro about your books…" /></div>
+          <p className="settings-hint">💡 Add/edit/remove individual books in the 📚 Books tab.</p>
+        </div>
+      )}
+
+      {/* ── RECIPES ── */}
+      {activePage==='page_recipes' && (
+        <div className="settings-section">
+          <h4>Page Header</h4>
+          <div className="form-field"><label>Heading</label><input value={pg.heading||''} onChange={e=>setC('heading',e.target.value)} placeholder="Recipes & Tips" /></div>
+          <div className="form-field"><label>Subtext</label><input value={pg.subtext||''} onChange={e=>setC('subtext',e.target.value)} /></div>
+          <p className="settings-hint">💡 Add/edit/remove individual recipes in the 📖 Recipes tab.</p>
+        </div>
+      )}
+
+      {/* ── BOOKING ── */}
+      {activePage==='page_booking' && (
+        <div className="settings-section">
+          <h4>Page Header</h4>
+          <div className="form-field"><label>Heading</label><input value={pg.heading||''} onChange={e=>setC('heading',e.target.value)} placeholder="Book a Consultation" /></div>
+          <div className="form-field"><label>Subtext</label><input value={pg.subtext||''} onChange={e=>setC('subtext',e.target.value)} /></div>
+          <div className="form-field"><label>Sidebar Bullet Points (one per line)</label><textarea rows={6} value={pg.sidebar_text||''} onChange={e=>setC('sidebar_text',e.target.value)} /></div>
+          <h4>Get in Touch Section</h4>
+          <div className="form-field"><label>Section Heading</label><input value={pg.contact_heading||''} onChange={e=>setC('contact_heading',e.target.value)} placeholder="Have a question? Let's talk." /></div>
+          <div className="form-field"><label>Section Subtext</label><textarea rows={3} value={pg.contact_subtext||''} onChange={e=>setC('contact_subtext',e.target.value)} /></div>
+          <p className="settings-hint">💡 Phone, email, and location come from the 🏠 Home page contact settings.</p>
+        </div>
+      )}
+
+      {/* ── THEME ── */}
+      <div className="settings-section" style={{marginTop:'1.5rem'}}>
+        <h4>🎨 Colors & Fonts — Changes Preview Live!</h4>
+        <p style={{fontSize:'0.85rem',color:'var(--text-muted)',marginBottom:'1.25rem'}}>Click a color swatch to open the color picker. Font changes show immediately.</p>
+        <div className="form-row-2">
+          <div className="form-field"><label>Primary Color (navbar, buttons, headings)</label>
+            <div className="color-row"><input type="color" value={theme.color_primary} onChange={e=>setT('color_primary',e.target.value)} className="color-swatch" /><input value={theme.color_primary} onChange={e=>setT('color_primary',e.target.value)} className="url-input" /></div>
+          </div>
+          <div className="form-field"><label>Secondary Color (dots, accents)</label>
+            <div className="color-row"><input type="color" value={theme.color_secondary} onChange={e=>setT('color_secondary',e.target.value)} className="color-swatch" /><input value={theme.color_secondary} onChange={e=>setT('color_secondary',e.target.value)} className="url-input" /></div>
           </div>
         </div>
         <div className="form-row-2">
-          <div className="form-field">
-            <label>Background Color</label>
-            <div style={{ display:'flex', gap:'0.75rem', alignItems:'center' }}>
-              <input type="color" value={pg.color_bg || '#FDFAF4'} onChange={e => { setC('color_bg',e.target.value); document.documentElement.style.setProperty('--cream', e.target.value) }} style={{ width:48, height:36, padding:2, border:'2px solid var(--sage-pale)', borderRadius:'var(--radius)', cursor:'pointer' }} />
-              <input value={pg.color_bg||'#FDFAF4'} onChange={e=>{ setC('color_bg',e.target.value); document.documentElement.style.setProperty('--cream',e.target.value) }} placeholder="#FDFAF4" style={{ flex:1 }} className="url-input" />
-            </div>
+          <div className="form-field"><label>Background Color</label>
+            <div className="color-row"><input type="color" value={theme.color_bg} onChange={e=>setT('color_bg',e.target.value)} className="color-swatch" /><input value={theme.color_bg} onChange={e=>setT('color_bg',e.target.value)} className="url-input" /></div>
           </div>
-          <div className="form-field">
-            <label>Heading Font</label>
-            <select value={pg.font_heading||'Dancing Script'} onChange={e=>{ setC('font_heading',e.target.value); document.documentElement.style.setProperty('--font-display', `'${e.target.value}', cursive`) }}>
-              <option value="Dancing Script">Dancing Script (current — handwritten)</option>
-              <option value="Playfair Display">Playfair Display (elegant serif)</option>
-              <option value="Lora">Lora (classic serif)</option>
-              <option value="Cormorant Garamond">Cormorant Garamond (refined)</option>
-              <option value="Pacifico">Pacifico (fun &amp; casual)</option>
-              <option value="Satisfy">Satisfy (script)</option>
+          <div className="form-field"><label>Text Color</label>
+            <div className="color-row"><input type="color" value={theme.color_text} onChange={e=>setT('color_text',e.target.value)} className="color-swatch" /><input value={theme.color_text} onChange={e=>setT('color_text',e.target.value)} className="url-input" /></div>
+          </div>
+        </div>
+        <div className="form-row-2">
+          <div className="form-field"><label>Heading / Display Font</label>
+            <select value={theme.font_heading} onChange={e=>setT('font_heading',e.target.value)}>
+              {FONT_OPTIONS.map(f=><option key={f} value={f}>{f}</option>)}
+            </select>
+            <span style={{fontSize:'0.8rem',color:'var(--text-muted)',marginTop:'0.3rem',display:'block'}}>Preview: <span style={{fontFamily:`'${theme.font_heading}', cursive`,fontSize:'1.3rem'}}>{site.bakeryName||"Pam's Cooking"}</span></span>
+          </div>
+          <div className="form-field"><label>Body / Paragraph Font</label>
+            <select value={theme.font_body} onChange={e=>setT('font_body',e.target.value)}>
+              {['Lato','Nunito','Poppins','Merriweather','Lora','Playfair Display'].map(f=><option key={f} value={f}>{f}</option>)}
+            </select>
+            <span style={{fontSize:'0.8rem',color:'var(--text-muted)',marginTop:'0.3rem',display:'block'}}>Preview: <span style={{fontFamily:`'${theme.font_body}', sans-serif`}}>The quick brown fox…</span></span>
+          </div>
+        </div>
+        <div className="form-row-2">
+          <div className="form-field"><label>Button Shape</label>
+            <select value={theme.button_radius} onChange={e=>setT('button_radius',e.target.value)}>
+              <option value="100px">Pill / Rounded</option>
+              <option value="8px">Slightly Rounded</option>
+              <option value="0px">Square</option>
+            </select>
+          </div>
+          <div className="form-field"><label>Card Shape</label>
+            <select value={theme.card_radius} onChange={e=>setT('card_radius',e.target.value)}>
+              <option value="6px">Slightly Rounded</option>
+              <option value="12px">Very Rounded</option>
+              <option value="0px">Square</option>
             </select>
           </div>
         </div>
-        <p className="settings-hint">💡 Color and font changes preview immediately. Click <strong>Save Changes</strong> to make them permanent.</p>
       </div>
 
-      {/* ── PAYMENT SETTINGS ── */}
-      <div className="settings-section" style={{ marginTop:'1.5rem' }}>
+      {/* ── PAYMENTS ── */}
+      <div className="settings-section" style={{marginTop:'1.5rem'}}>
         <h4>💳 Payment Settings</h4>
-        <p style={{ fontSize:'0.85rem', color:'var(--text-muted)', marginBottom:'1rem' }}>When customers pay their deposit, they go to this payment link.</p>
         <div className="form-row-2">
           <div className="form-field"><label>Payment Method</label>
             <select value={payments.method||'PayPal'} onChange={e=>setP('method',e.target.value)}>
@@ -514,10 +739,10 @@ function PageEditor() {
             </select>
           </div>
           <div className="form-field"><label>Your PayPal email / Handle</label>
-            <input value={payments.payment_id||''} onChange={e=>setP('payment_id',e.target.value)} placeholder="youremail@gmail.com or @YourHandle" />
+            <input value={payments.payment_id||''} onChange={e=>setP('payment_id',e.target.value)} placeholder="email@gmail.com or @Handle" />
           </div>
         </div>
-        <div className="form-field"><label>Custom Payment Instructions (for Zelle / Bank Transfer / Custom)</label>
+        <div className="form-field"><label>Custom Instructions</label>
           <textarea rows={2} value={payments.custom_instructions||''} onChange={e=>setP('custom_instructions',e.target.value)} />
         </div>
       </div>
@@ -528,35 +753,44 @@ function PageEditor() {
 // ─── Main Admin Shell ─────────────────────────────────────────
 export default function Admin() {
   const [user, setUser] = useState(undefined)
-  const [tab, setTab] = useState('orders')
-  const [cakes, setCakes] = useState([])
-  const [posts, setPosts] = useState([])
-  const [editingCake, setEditingCake] = useState(null)
-  const [editingPost, setEditingPost] = useState(null)
-  const [showNewCake, setShowNewCake] = useState(false)
-  const [showNewPost, setShowNewPost] = useState(false)
+  const [tab, setTab]   = useState('orders')
+  const [cakes, setCakes]   = useState([])
+  const [books, setBooks]   = useState([])
+  const [posts, setPosts]   = useState([])
+  const [editCake, setEditCake] = useState(null)
+  const [editBook, setEditBook] = useState(null)
+  const [editPost, setEditPost] = useState(null)
+  const [newCake, setNewCake]   = useState(false)
+  const [newBook, setNewBook]   = useState(false)
+  const [newPost, setNewPost]   = useState(false)
 
   useEffect(()=>{
     supabase.auth.getSession().then(({data})=>setUser(data.session?.user||null))
     supabase.auth.onAuthStateChange((_,s)=>setUser(s?.user||null))
   },[])
 
-  useEffect(()=>{ if (!user) return; getCakes().then(setCakes); getPosts().then(setPosts) },[user])
+  useEffect(()=>{
+    if (!user) return
+    getCakes().then(setCakes)
+    getBooks().then(setBooks)
+    getPosts().then(setPosts)
+  },[user])
 
   if (user===undefined) return <div className="loading">Loading…</div>
-  if (!user) return <LoginScreen />
+  if (!user)            return <LoginScreen />
 
-  const refreshCakes = () => { getCakes().then(setCakes); setEditingCake(null); setShowNewCake(false) }
-  const refreshPosts = () => { getPosts().then(setPosts); setEditingPost(null); setShowNewPost(false) }
-  const delCake = async id => { if (!confirm('Delete this cake?')) return; await deleteCake(id); getCakes().then(setCakes) }
-  const delPost = async id => { if (!confirm('Delete this post?')) return; await deletePost(id); getPosts().then(setPosts) }
+  const refreshCakes = () => { getCakes().then(setCakes); setEditCake(null); setNewCake(false) }
+  const refreshBooks = () => { getBooks().then(setBooks); setEditBook(null); setNewBook(false) }
+  const refreshPosts = () => { getPosts().then(setPosts); setEditPost(null); setNewPost(false) }
 
   const TABS = [
-    { id:'orders',   label:'📋 Orders' },
-    { id:'cakes',    label:'🎂 Cakes' },
-    { id:'recipes',  label:'📖 Recipes' },
-    { id:'calendar', label:'📅 Calendar' },
-    { id:'pages',    label:'✏️ Edit Pages' },
+    {id:'orders',   label:'📋 Orders'},
+    {id:'messages', label:'💌 Messages'},
+    {id:'cakes',    label:'🎂 Cakes'},
+    {id:'books',    label:'📚 Books'},
+    {id:'recipes',  label:'📖 Recipes'},
+    {id:'calendar', label:'📅 Calendar'},
+    {id:'pages',    label:'✏️ Edit Site'},
   ]
 
   return (
@@ -574,93 +808,96 @@ export default function Admin() {
           </nav>
           <div style={{display:'flex',gap:'1rem',alignItems:'center',flexShrink:0}}>
             <a href="/" target="_blank" className="btn btn-outline btn-sm">View Site →</a>
-            <button className="btn btn-sm" style={{color:'var(--text-muted)'}} onClick={()=>supabase.auth.signOut()}>Sign Out</button>
+            <button className="btn btn-sm" style={{color:'rgba(253,250,244,0.6)'}} onClick={()=>supabase.auth.signOut()}>Sign Out</button>
           </div>
         </div>
       </header>
 
       <main className="admin-main">
+        {tab==='orders'   && <OrdersDashboard />}
+        {tab==='messages' && <ContactsDashboard />}
+        {tab==='calendar' && <CalendarEditor />}
+        {tab==='pages'    && <PageEditor />}
 
-        {/* ── Orders ── */}
-        {tab==='orders' && <OrdersDashboard />}
-
-        {/* ── Cakes ── */}
         {tab==='cakes' && (
-          <div>
-            {(showNewCake||editingCake) ? (
-              <CakeEditor cake={editingCake} onSave={refreshCakes} onCancel={()=>{setShowNewCake(false);setEditingCake(null)}} />
-            ) : (
-              <>
-                <div className="tab-header">
-                  <h2>Cakes</h2>
-                  <button className="btn btn-sage" onClick={()=>setShowNewCake(true)}>+ Add New Cake</button>
-                </div>
-                {cakes.length===0 ? <p className="empty-msg">No cakes yet. Add your first one!</p> : (
+          (newCake||editCake)
+            ? <CakeEditor cake={editCake} onSave={refreshCakes} onCancel={()=>{setNewCake(false);setEditCake(null)}} />
+            : <>
+                <div className="tab-header"><h2>Cakes</h2><button className="btn btn-sage" onClick={()=>setNewCake(true)}>+ Add New Cake</button></div>
+                {cakes.length===0 ? <p className="empty-msg">No cakes yet.</p> : (
                   <div className="admin-list">
-                    {cakes.map(cake=>(
-                      <div key={cake.id} className="admin-item">
-                        <div className="admin-item__img">{cake.image_url?<img src={cake.image_url} alt={cake.title}/>:<div className="img-placeholder">🎂</div>}</div>
+                    {cakes.map(c=>(
+                      <div key={c.id} className="admin-item">
+                        <div className="admin-item__img">{c.image_url?<img src={c.image_url} alt="" />:<div className="img-placeholder">🎂</div>}</div>
                         <div className="admin-item__info">
-                          <strong>{cake.title}</strong>
-                          <span>${Number(cake.price).toLocaleString()} · {cake.category}</span>
+                          <strong>{c.title}</strong>
+                          <span>${Number(c.price).toLocaleString()} · {c.category}</span>
                           <div style={{display:'flex',gap:'0.4rem',marginTop:'0.3rem',flexWrap:'wrap'}}>
-                            {cake.featured&&<span className="badge badge-brown">Featured</span>}
-                            <span className="badge" style={cake.available?{background:'var(--sage-pale)',color:'var(--sage-dark)'}:{background:'#fee',color:'#c0392b'}}>{cake.available?'Available':'Unavailable'}</span>
+                            {c.featured&&<span className="badge badge-brown">Featured</span>}
+                            <span className="badge" style={c.available?{background:'var(--sage-pale)',color:'var(--sage-dark)'}:{background:'#fee',color:'#c0392b'}}>{c.available?'Available':'Unavailable'}</span>
                           </div>
                         </div>
                         <div className="admin-item__actions">
-                          <button className="btn btn-outline btn-sm" onClick={()=>setEditingCake(cake)}>Edit</button>
-                          <button className="btn btn-danger btn-sm" onClick={()=>delCake(cake.id)}>Delete</button>
+                          <button className="btn btn-outline btn-sm" onClick={()=>setEditCake(c)}>Edit</button>
+                          <button className="btn btn-danger btn-sm" onClick={()=>{ if(confirm('Delete?')) deleteCake(c.id).then(()=>getCakes().then(setCakes)) }}>Delete</button>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
               </>
-            )}
-          </div>
         )}
 
-        {/* ── Recipes ── */}
-        {tab==='recipes' && (
-          <div>
-            {(showNewPost||editingPost) ? (
-              <PostEditor post={editingPost} onSave={refreshPosts} onCancel={()=>{setShowNewPost(false);setEditingPost(null)}} />
-            ) : (
-              <>
-                <div className="tab-header">
-                  <h2>Recipes & Blog Posts</h2>
-                  <button className="btn btn-sage" onClick={()=>setShowNewPost(true)}>+ Add New Post</button>
-                </div>
-                {posts.length===0 ? <p className="empty-msg">No posts yet.</p> : (
+        {tab==='books' && (
+          (newBook||editBook)
+            ? <BookEditor book={editBook} onSave={refreshBooks} onCancel={()=>{setNewBook(false);setEditBook(null)}} />
+            : <>
+                <div className="tab-header"><h2>Books & Cookbooks</h2><button className="btn btn-sage" onClick={()=>setNewBook(true)}>+ Add New Book</button></div>
+                {books.length===0 ? <p className="empty-msg">No books yet.</p> : (
                   <div className="admin-list">
-                    {posts.map(post=>(
-                      <div key={post.id} className="admin-item">
-                        <div className="admin-item__img">{post.image_url?<img src={post.image_url} alt={post.title}/>:<div className="img-placeholder">📖</div>}</div>
+                    {books.map(b=>(
+                      <div key={b.id} className="admin-item">
+                        <div className="admin-item__img">{b.image_url?<img src={b.image_url} alt="" />:<div className="img-placeholder">📚</div>}</div>
                         <div className="admin-item__info">
-                          <strong>{post.title}</strong>
-                          <span>{new Date(post.date).toLocaleDateString()}</span>
-                          <p style={{fontSize:'0.8rem',color:'var(--text-muted)',marginTop:'0.2rem'}}>{post.excerpt?.slice(0,80)}{post.excerpt?.length>80?'…':''}</p>
+                          <strong>{b.title}</strong>
+                          <span>${Number(b.price).toFixed(2)} · {b.category}</span>
                         </div>
                         <div className="admin-item__actions">
-                          <button className="btn btn-outline btn-sm" onClick={()=>setEditingPost(post)}>Edit</button>
-                          <button className="btn btn-danger btn-sm" onClick={()=>delPost(post.id)}>Delete</button>
+                          <button className="btn btn-outline btn-sm" onClick={()=>setEditBook(b)}>Edit</button>
+                          <button className="btn btn-danger btn-sm" onClick={()=>{ if(confirm('Delete?')) deleteBook(b.id).then(()=>getBooks().then(setBooks)) }}>Delete</button>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
               </>
-            )}
-          </div>
         )}
 
-        {/* ── Calendar ── */}
-        {tab==='calendar' && <CalendarEditor />}
-
-        {/* ── Pages ── */}
-        {tab==='pages' && <PageEditor />}
-
+        {tab==='recipes' && (
+          (newPost||editPost)
+            ? <PostEditor post={editPost} onSave={refreshPosts} onCancel={()=>{setNewPost(false);setEditPost(null)}} />
+            : <>
+                <div className="tab-header"><h2>Recipes & Blog</h2><button className="btn btn-sage" onClick={()=>setNewPost(true)}>+ Add New Post</button></div>
+                {posts.length===0 ? <p className="empty-msg">No posts yet.</p> : (
+                  <div className="admin-list">
+                    {posts.map(p=>(
+                      <div key={p.id} className="admin-item">
+                        <div className="admin-item__img">{p.image_url?<img src={p.image_url} alt="" />:<div className="img-placeholder">📖</div>}</div>
+                        <div className="admin-item__info">
+                          <strong>{p.title}</strong>
+                          <span>{new Date(p.date).toLocaleDateString()}</span>
+                          <p style={{fontSize:'0.8rem',color:'var(--text-muted)',marginTop:'0.2rem'}}>{p.excerpt?.slice(0,80)}{p.excerpt?.length>80?'…':''}</p>
+                        </div>
+                        <div className="admin-item__actions">
+                          <button className="btn btn-outline btn-sm" onClick={()=>setEditPost(p)}>Edit</button>
+                          <button className="btn btn-danger btn-sm" onClick={()=>{ if(confirm('Delete?')) deletePost(p.id).then(()=>getPosts().then(setPosts)) }}>Delete</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+        )}
       </main>
     </div>
   )
