@@ -9,6 +9,7 @@ import CakeDetail from './pages/CakeDetail'
 import BlogPage from './pages/BlogPage'
 import BlogPost from './pages/BlogPost'
 import BookingPage from './pages/BookingPage'
+import OrderSuccess from './pages/OrderSuccess'
 import Admin from './pages/Admin'
 
 class ErrorBoundary extends Component {
@@ -30,21 +31,20 @@ export default function App() {
   return (
     <ErrorBoundary>
       <Routes>
-        {/* Hidden admin — no navbar/footer */}
         <Route path="/my-kitchen" element={<Admin />} />
-        {/* Public site */}
         <Route path="*" element={
           <>
             <ApplyTheme />
             <Navbar />
             <main>
               <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/cakes" element={<CakesPage />} />
-                <Route path="/cakes/:id" element={<CakeDetail />} />
-                <Route path="/recipes" element={<BlogPage />} />
-                <Route path="/recipes/:id" element={<BlogPost />} />
-                <Route path="/booking" element={<BookingPage />} />
+                <Route path="/"                element={<Home />} />
+                <Route path="/cakes"           element={<CakesPage />} />
+                <Route path="/cakes/:id"       element={<CakeDetail />} />
+                <Route path="/recipes"         element={<BlogPage />} />
+                <Route path="/recipes/:id"     element={<BlogPost />} />
+                <Route path="/booking"         element={<BookingPage />} />
+                <Route path="/order-success"   element={<OrderSuccess />} />
               </Routes>
             </main>
             <Footer />
