@@ -255,12 +255,73 @@ function TimeDropdown({ value, onChange }) {
   )
 }
 
+// ─── Calendar Editor ──────────────────────────────────────────
+const MONTHS_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December']
+const CAL_DAYS     = ['Su','Mo','Tu','We','Th','Fr','Sa']
+const HOURS        = ['6','7','8','9','10','11','12','1','2','3','4','5','6','7','8','9']
+const MINUTES      = ['00','15','30','45']
+const AMPM         = ['AM','PM']
+
+function CalPicker({ onSelect }) {
+  const today = new Date()
+  const [year, setYear]   = useState(today.getFullYear())
+  const [month, setMonth] = useState(today.getMonth())
+  const firstDay    = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month+1, 0).getDate()
+  const cells = []
+  for (let i=0;i<firstDay;i++) cells.push(null)
+  for (let d=1;d<=daysInMonth;d++) {
+    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+    cells.push({ d, ds, isPast: new Date(ds) <= new Date(today.toDateString()) })
+  }
+  const prev = () => { if(month===0){setYear(y=>y-1);setMonth(11)}else setMonth(m=>m-1) }
+  const next = () => { if(month===11){setYear(y=>y+1);setMonth(0)}else setMonth(m=>m+1) }
+  return (
+    <div className="cal-picker">
+      <div className="cal-picker__nav">
+        <button onClick={prev} className="btn btn-outline btn-sm">‹</button>
+        <span>{MONTHS_FULL[month]} {year}</span>
+        <button onClick={next} className="btn btn-outline btn-sm">›</button>
+      </div>
+      <div className="cal-picker__grid">
+        {CAL_DAYS.map(d=><div key={d} className="cp-dayname">{d}</div>)}
+        {cells.map((cell,i)=>{
+          if (!cell) return <div key={`e${i}`} className="cp-cell cp-cell--empty" />
+          return (
+            <button key={cell.ds} disabled={cell.isPast}
+              className={`cp-cell ${cell.isPast?'cp-cell--past':'cp-cell--active'}`}
+              onClick={()=>onSelect(cell.ds)}
+            >{cell.d}</button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function TimeDropdown({ onChange }) {
+  const [h, setH]   = useState('10')
+  const [m, setM]   = useState('00')
+  const [ap, setAp] = useState('AM')
+  useEffect(() => { onChange(`${h}:${m} ${ap}`) }, [h, m, ap])
+  return (
+    <div className="time-dropdown">
+      <select value={h}  onChange={e=>setH(e.target.value)}>  {HOURS.map((hr,i)=><option key={i} value={hr}>{hr}</option>)}</select>
+      <span>:</span>
+      <select value={m}  onChange={e=>setM(e.target.value)}>  {MINUTES.map(mn=><option key={mn} value={mn}>{mn}</option>)}</select>
+      <select value={ap} onChange={e=>setAp(e.target.value)}> {AMPM.map(a=><option key={a}>{a}</option>)}</select>
+    </div>
+  )
+}
+
 function CalendarEditor() {
-  const [avail, setAvail] = useState([])
+  const [avail, setAvail]         = useState([])
   const [showPicker, setShowPicker] = useState(false)
   const [pendingDate, setPendingDate] = useState(null)
   const [pendingSlots, setPendingSlots] = useState([])
-  const [currentTime, setCurrentTime] = useState('10:00 AM')
+  const [currentTime, setCurrentTime]   = useState('10:00 AM')
+  const [addType, setAddType]     = useState('pickup') // 'pickup' | 'consultation'
+  const [viewType, setViewType]   = useState('all')
   const today = new Date()
   const [year, setYear]   = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
@@ -274,64 +335,86 @@ function CalendarEditor() {
   const firstDay    = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month+1, 0).getDate()
   const cells = []
-  for (let i=0; i<firstDay; i++) cells.push(null)
-  for (let d=1; d<=daysInMonth; d++) {
+  for (let i=0;i<firstDay;i++) cells.push(null)
+  for (let d=1;d<=daysInMonth;d++) {
     const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
     cells.push({ d, ds, row: availMap[ds]||null })
   }
 
-  const handlePickDate = ds => {
-    setPendingDate(ds)
-    setPendingSlots([])
-    setShowPicker(false)
-  }
+  const fmtDate = d => new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
 
-  const addTimeSlot = () => {
-    if (!currentTime) return
-    if (!pendingSlots.includes(currentTime)) setPendingSlots(s=>[...s, currentTime])
-  }
-
-  const removeSlot = slot => setPendingSlots(s=>s.filter(x=>x!==slot))
+  const handlePickDate = ds => { setPendingDate(ds); setPendingSlots([]); setShowPicker(false) }
+  const addTimeSlot    = () => { if(!pendingSlots.includes(currentTime)) setPendingSlots(s=>[...s,currentTime]) }
+  const removeSlot     = s  => setPendingSlots(ss=>ss.filter(x=>x!==s))
 
   const saveDate = async () => {
     if (!pendingDate) return alert('Pick a date first.')
-    await saveAvailability({ date:pendingDate, slots:pendingSlots, booked:false })
+    await saveAvailability({ date:pendingDate, slots:pendingSlots, booked:false, type:addType })
     setPendingDate(null); setPendingSlots([]); load()
   }
 
   const toggleBooked = async row => { await saveAvailability({...row, booked:!row.booked}); load() }
   const removeDate   = async id  => { if (!confirm('Remove this date?')) return; await deleteAvailability(id); load() }
 
-  const fmtDate = d => new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})
+  // Filter displayed dates by viewType
+  const displayCells = cells.map(cell => {
+    if (!cell) return cell
+    if (viewType === 'all') return cell
+    if (!cell.row) return { ...cell, row: null }
+    if (cell.row.type !== viewType) return { ...cell, row: null }
+    return cell
+  })
 
   return (
     <div>
       <h3 className="tab-title">Manage Availability</h3>
-      <p style={{color:'var(--text-muted)',marginBottom:'1.5rem',fontSize:'0.9rem'}}>Add dates customers can pick for pickup or consultation. They only see dates you add here.</p>
 
-      {/* Month view */}
+      {/* Type legend */}
+      <div className="cal-type-legend">
+        <div className="cal-type-item">
+          <span className="cal-type-dot pickup" />
+          <strong>🎂 Pickup Dates</strong> — for cake orders (customers pick from this list when ordering a cake)
+        </div>
+        <div className="cal-type-item">
+          <span className="cal-type-dot consult" />
+          <strong>📅 Consultation Dates</strong> — for booking a consult (shown on the booking/consult page)
+        </div>
+      </div>
+
+      {/* View filter */}
+      <div className="filter-row" style={{marginBottom:'1rem'}}>
+        <span style={{fontSize:'0.82rem',color:'var(--text-muted)',alignSelf:'center'}}>Show:</span>
+        {[{v:'all',l:'All Dates'},{v:'pickup',l:'🎂 Pickup Only'},{v:'consultation',l:'📅 Consultations Only'}].map(o=>(
+          <button key={o.v} className={`filter-btn ${viewType===o.v?'active':''}`} onClick={()=>setViewType(o.v)}>{o.l}</button>
+        ))}
+      </div>
+
+      {/* Month nav */}
       <div className="admin-cal-nav">
         <button className="btn btn-outline btn-sm" onClick={()=>{if(month===0){setYear(y=>y-1);setMonth(11)}else setMonth(m=>m-1)}}>‹ Prev</button>
         <span className="admin-cal-month">{MONTHS_FULL[month]} {year}</span>
         <button className="btn btn-outline btn-sm" onClick={()=>{if(month===11){setYear(y=>y+1);setMonth(0)}else setMonth(m=>m+1)}}>Next ›</button>
       </div>
 
+      {/* Calendar grid */}
       <div className="admin-cal-grid">
         {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=><div key={d} className="admin-cal-dayname">{d}</div>)}
-        {cells.map((cell,i)=>{
+        {displayCells.map((cell,i)=>{
           if (!cell) return <div key={`e${i}`} className="admin-cal-cell admin-cal-cell--empty" />
           const {d, ds, row} = cell
+          const typeClass = row ? (row.type==='pickup' ? 'admin-cal-cell--pickup' : 'admin-cal-cell--consult') : ''
           return (
-            <div key={ds} className={`admin-cal-cell ${row?(row.booked?'admin-cal-cell--booked':'admin-cal-cell--avail'):''}`}>
+            <div key={ds} className={`admin-cal-cell ${typeClass} ${row?(row.booked?'admin-cal-cell--booked':'admin-cal-cell--avail'):''}`}>
               <span className="admin-cal-num">{d}</span>
               {row && (
                 <div className="admin-cal-info">
+                  <span className={`admin-cal-type-tag ${row.type}`}>{row.type==='pickup'?'🎂':'📅'}</span>
                   {row.booked
                     ? <span className="admin-cal-tag booked">Booked</span>
-                    : <span className="admin-cal-tag avail">{row.slots?.length||0} slot{row.slots?.length!==1?'s':''}</span>
+                    : <span className="admin-cal-tag avail">{row.slots?.length||0}s</span>
                   }
                   <div className="admin-cal-actions">
-                    <button title={row.booked?'Mark open':'Mark booked'} onClick={()=>toggleBooked(row)}>{row.booked?'↩':'✕'}</button>
+                    <button title={row.booked?'Open':'Book'} onClick={()=>toggleBooked(row)}>{row.booked?'↩':'✕'}</button>
                     <button title="Remove" onClick={()=>removeDate(row.id)} style={{color:'var(--red)'}}>🗑</button>
                   </div>
                 </div>
@@ -343,9 +426,24 @@ function CalendarEditor() {
 
       {/* Add Date Panel */}
       <div className="add-date-form">
-        <h4>Add Available Date</h4>
+        <h4>Add a Date</h4>
 
-        {/* Date picker button */}
+        {/* Type selector */}
+        <div className="form-field">
+          <label>What type of date is this?</label>
+          <div className="type-selector">
+            <button className={`type-btn ${addType==='pickup'?'active':''}`} onClick={()=>setAddType('pickup')}>
+              🎂 Cake Pickup Date
+              <span>Customers pick this when ordering a cake</span>
+            </button>
+            <button className={`type-btn ${addType==='consultation'?'active':''}`} onClick={()=>setAddType('consultation')}>
+              📅 Consultation Date
+              <span>Shown on the booking / consult page</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Date picker */}
         <div className="form-field">
           <label>Pick a Date</label>
           <div style={{display:'flex',gap:'0.75rem',alignItems:'center',flexWrap:'wrap'}}>
@@ -361,27 +459,26 @@ function CalendarEditor() {
           )}
         </div>
 
-        {/* Time slot builder */}
+        {/* Time slots */}
         {pendingDate && (
           <>
             <div className="form-field">
-              <label>Add Time Slots</label>
+              <label>Add Time Slots (optional)</label>
               <div style={{display:'flex',gap:'0.75rem',alignItems:'center',flexWrap:'wrap'}}>
-                <TimeDropdown value={currentTime} onChange={setCurrentTime} />
+                <TimeDropdown onChange={setCurrentTime} />
                 <button className="btn btn-outline btn-sm" onClick={addTimeSlot}>+ Add Slot</button>
               </div>
               {pendingSlots.length > 0 && (
                 <div className="pending-slots">
                   {pendingSlots.map(s=>(
-                    <span key={s} className="pending-slot">
-                      {s} <button onClick={()=>removeSlot(s)}>×</button>
-                    </span>
+                    <span key={s} className="pending-slot">{s}<button onClick={()=>removeSlot(s)}>×</button></span>
                   ))}
                 </div>
               )}
             </div>
             <button className="btn btn-sage" onClick={saveDate}>
-              Save {fmtDate(pendingDate)}{pendingSlots.length > 0 ? ` with ${pendingSlots.length} slot${pendingSlots.length!==1?'s':''}` : ' (no slots)'}
+              Save {addType==='pickup'?'🎂 Pickup':'📅 Consultation'} Date: {fmtDate(pendingDate)}
+              {pendingSlots.length>0?` · ${pendingSlots.length} slot${pendingSlots.length!==1?'s':''}` : ''}
             </button>
           </>
         )}
@@ -731,20 +828,50 @@ function PageEditor() {
 
       {/* ── PAYMENTS ── */}
       <div className="settings-section" style={{marginTop:'1.5rem'}}>
-        <h4>💳 Payment Settings</h4>
-        <div className="form-row-2">
-          <div className="form-field"><label>Payment Method</label>
-            <select value={payments.method||'PayPal'} onChange={e=>setP('method',e.target.value)}>
-              {['PayPal','Venmo','CashApp','Zelle','BankTransfer','Custom'].map(m=><option key={m}>{m}</option>)}
-            </select>
+        <h4>💳 PayPal Setup</h4>
+        <p style={{fontSize:'0.85rem',color:'var(--text-muted)',marginBottom:'1rem',lineHeight:1.6}}>
+          Enter your PayPal credentials below. Customers will pay through a secure PayPal popup — their pickup date is only reserved after payment fully completes. Money goes straight to your PayPal.
+        </p>
+
+        <div className="paypal-setup-steps">
+          <div className="paypal-step">
+            <span className="paypal-step__num">1</span>
+            <div><strong>Go to developer.paypal.com</strong> and log in with your PayPal account</div>
           </div>
-          <div className="form-field"><label>Your PayPal email / Handle</label>
-            <input value={payments.payment_id||''} onChange={e=>setP('payment_id',e.target.value)} placeholder="email@gmail.com or @Handle" />
+          <div className="paypal-step">
+            <span className="paypal-step__num">2</span>
+            <div>Click <strong>Apps & Credentials</strong> → switch to <strong>Live</strong> mode → click <strong>Create App</strong></div>
+          </div>
+          <div className="paypal-step">
+            <span className="paypal-step__num">3</span>
+            <div>Copy your <strong>Client ID</strong> and <strong>Secret</strong> and paste them below</div>
           </div>
         </div>
-        <div className="form-field"><label>Custom Instructions</label>
-          <textarea rows={2} value={payments.custom_instructions||''} onChange={e=>setP('custom_instructions',e.target.value)} />
+
+        <div className="form-field">
+          <label>PayPal Client ID <span className="field-hint">(safe to save here — this is public)</span></label>
+          <input value={payments.paypal_client_id||''} onChange={e=>setP('paypal_client_id',e.target.value)} placeholder="AaBbCcDd…long string…" style={{fontFamily:'monospace',fontSize:'0.8rem'}} />
         </div>
+        <div className="form-field">
+          <label>PayPal Secret <span className="field-hint">(kept private — never shared with customers)</span></label>
+          <input type="password" value={payments.paypal_client_secret||''} onChange={e=>setP('paypal_client_secret',e.target.value)} placeholder="EeFfGgHh…long string…" style={{fontFamily:'monospace',fontSize:'0.8rem'}} />
+          <p style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:'0.3rem'}}>⚠️ This is saved to your private database. Never share this with anyone.</p>
+        </div>
+
+        <div className="form-field">
+          <label>PayPal Environment</label>
+          <select value={payments.paypal_env||'sandbox'} onChange={e=>setP('paypal_env',e.target.value)}>
+            <option value="sandbox">Sandbox (Test Mode — use for testing)</option>
+            <option value="live">Live (Real Money)</option>
+          </select>
+          <p style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:'0.3rem'}}>Use Sandbox to test, then switch to Live when ready for real payments.</p>
+        </div>
+
+        {payments.paypal_client_id && (
+          <div className="paypal-status">
+            ✅ PayPal is configured — customers will see a PayPal payment button when ordering.
+          </div>
+        )}
       </div>
     </div>
   )

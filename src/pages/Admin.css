@@ -165,3 +165,33 @@
 @media(max-width:768px){
   .contact-card { grid-template-columns: 1fr; }
 }
+
+/* ── Calendar type legend ─────────────────────────── */
+.cal-type-legend { display:flex; flex-direction:column; gap:0.6rem; background:var(--white); border-radius:var(--radius); padding:1.25rem; box-shadow:var(--shadow); margin-bottom:1.5rem; }
+.cal-type-item   { display:flex; align-items:center; gap:0.65rem; font-size:0.88rem; color:var(--text-muted); }
+.cal-type-dot    { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+.cal-type-dot.pickup  { background: #4A7A50; }
+.cal-type-dot.consult { background: #1565c0; }
+
+/* Calendar type tags on cells */
+.admin-cal-type-tag { font-size:0.7rem; line-height:1; }
+.admin-cal-cell--pickup  { border-top: 3px solid #4A7A50; }
+.admin-cal-cell--consult { border-top: 3px solid #1565c0; }
+
+/* Type selector buttons */
+.type-selector { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.4rem; }
+.type-btn { display:flex; flex-direction:column; align-items:flex-start; gap:0.2rem; padding:0.85rem 1rem; background:var(--white); border:2px solid var(--sage-pale); border-radius:var(--radius); cursor:pointer; transition:all 0.2s; font-size:0.9rem; font-weight:700; color:var(--text); text-align:left; }
+.type-btn span { font-size:0.72rem; font-weight:400; color:var(--text-muted); }
+.type-btn:hover { border-color:var(--sage-light); }
+.type-btn.active { border-color:var(--sage-dark); background:var(--sage-ghost); color:var(--sage-dark); }
+.type-btn.active span { color:var(--sage-mid); }
+
+@media(max-width:600px){ .type-selector { grid-template-columns:1fr; } }
+
+/* ── PayPal Setup ──────────────────────────────── */
+.paypal-setup-steps { display:flex; flex-direction:column; gap:0.75rem; background:var(--sage-ghost); padding:1.25rem; border-radius:var(--radius); margin-bottom:1.25rem; }
+.paypal-step { display:flex; align-items:flex-start; gap:0.75rem; font-size:0.88rem; color:var(--text-muted); line-height:1.5; }
+.paypal-step__num { width:24px; height:24px; background:var(--sage-dark); color:var(--cream); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:700; flex-shrink:0; margin-top:1px; }
+.paypal-step strong { color:var(--text); }
+.field-hint { font-size:0.72rem; font-weight:400; color:var(--text-muted); margin-left:0.4rem; }
+.paypal-status { background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; padding:0.75rem 1rem; border-radius:var(--radius); font-size:0.88rem; font-weight:500; margin-top:0.5rem; }

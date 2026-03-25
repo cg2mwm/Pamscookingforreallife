@@ -55,8 +55,11 @@ export async function setSetting(key, value) {
 }
 
 // ── Availability ───────────────────────────────────
-export async function getAvailability() {
-  const { data } = await supabase.from('availability').select('*').order('date')
+// type = 'pickup' | 'consultation'
+export async function getAvailability(type) {
+  let q = supabase.from('availability').select('*').order('date')
+  if (type) q = q.eq('type', type)
+  const { data } = await q
   return data || []
 }
 export async function saveAvailability(row) {
@@ -64,6 +67,10 @@ export async function saveAvailability(row) {
 }
 export async function deleteAvailability(id) {
   return supabase.from('availability').delete().eq('id', id)
+}
+// Called immediately when a customer picks a pickup date — marks it booked right away
+export async function bookPickupDate(date) {
+  return supabase.from('availability').update({ booked: true }).eq('date', date).eq('type', 'pickup')
 }
 
 // ── Orders ─────────────────────────────────────────

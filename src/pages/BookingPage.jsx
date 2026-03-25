@@ -33,7 +33,7 @@ export default function BookingPage() {
   const [month, setMonth] = useState(today.getMonth())
 
   useEffect(() => {
-    getAvailability().then(setAvail)
+    getAvailability('consultation').then(setAvail)
     getSetting('page_booking').then(d => setPg(d || {}))
     getSetting('homepage').then(d => setSite(d || {}))
   }, [])
