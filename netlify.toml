@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [build]
   publish = "dist"
   command = "npm run build"
@@ -9,3 +10,6 @@
   from = "/*"
   to = "/index.html"
   status = 200
+=======
+# config
+>>>>>>> 060e6e5b36d5fda50d2fd118ec2421bf623d1b32
