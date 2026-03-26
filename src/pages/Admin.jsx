@@ -780,6 +780,9 @@ function PageEditor() {
         </div>
         <p style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>Get your keys from <strong>developer.paypal.com</strong> → Apps & Credentials → your app → switch to Live mode.</p>
       </div>
+    </div>
+  )
+}
 
 // ─── Main Admin Shell ─────────────────────────────────────────
 export default function Admin() {
