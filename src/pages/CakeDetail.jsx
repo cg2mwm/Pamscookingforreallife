@@ -145,7 +145,8 @@ export default function CakeDetail() {
   useEffect(() => {
     getCake(id).then(c => { if (!c) setNotFound(true); else setCake(c); setLoading(false) })
     getAvailability('pickup').then(all => setPickupDates(all.filter(a => !a.booked)))
-    getSetting('payments').then(p => { if (p?.paypal_client_id) setPaypalClientId(p.paypal_client_id) })
+    // Client ID comes from Netlify env var — safe to expose in frontend
+    setPaypalClientId(import.meta.env.VITE_PAYPAL_CLIENT_ID || '')
   }, [id])
 
   if (loading)  return <p className="loading">Loading…</p>

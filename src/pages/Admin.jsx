@@ -755,56 +755,31 @@ function PageEditor() {
         </div>
       </div>
 
-      {/* ── PAYMENTS ── */}
+      {/* ── PAYMENTS NOTE ── */}
       <div className="settings-section" style={{marginTop:'1.5rem'}}>
-        <h4>💳 PayPal Setup</h4>
-        <p style={{fontSize:'0.85rem',color:'var(--text-muted)',marginBottom:'1rem',lineHeight:1.6}}>
-          Enter your PayPal credentials below. Customers will pay through a secure PayPal popup — their pickup date is only reserved after payment fully completes. Money goes straight to your PayPal.
-        </p>
-
+        <h4>💳 PayPal Payment Settings</h4>
         <div className="paypal-setup-steps">
           <div className="paypal-step">
             <span className="paypal-step__num">1</span>
-            <div><strong>Go to developer.paypal.com</strong> and log in with your PayPal account</div>
+            <div>Go to <strong>Netlify → Site configuration → Environment variables</strong></div>
           </div>
           <div className="paypal-step">
             <span className="paypal-step__num">2</span>
-            <div>Click <strong>Apps & Credentials</strong> → switch to <strong>Live</strong> mode → click <strong>Create App</strong></div>
+            <div>Add these three variables:
+              <div style={{marginTop:'0.5rem',fontFamily:'monospace',fontSize:'0.8rem',background:'var(--sage-ghost)',padding:'0.75rem',borderRadius:'var(--radius)',display:'flex',flexDirection:'column',gap:'0.3rem'}}>
+                <span><strong>VITE_PAYPAL_CLIENT_ID</strong> = your live Client ID</span>
+                <span><strong>PAYPAL_CLIENT_SECRET</strong> = your live Secret key</span>
+                <span><strong>PAYPAL_ENV</strong> = live</span>
+              </div>
+            </div>
           </div>
           <div className="paypal-step">
             <span className="paypal-step__num">3</span>
-            <div>Copy your <strong>Client ID</strong> and <strong>Secret</strong> and paste them below</div>
+            <div>Trigger a redeploy in Netlify — payments will work instantly</div>
           </div>
         </div>
-
-        <div className="form-field">
-          <label>PayPal Client ID <span className="field-hint">(safe to save here — this is public)</span></label>
-          <input value={payments.paypal_client_id||''} onChange={e=>setP('paypal_client_id',e.target.value)} placeholder="AaBbCcDd…long string…" style={{fontFamily:'monospace',fontSize:'0.8rem'}} />
-        </div>
-        <div className="form-field">
-          <label>PayPal Secret <span className="field-hint">(kept private — never shared with customers)</span></label>
-          <input type="password" value={payments.paypal_client_secret||''} onChange={e=>setP('paypal_client_secret',e.target.value)} placeholder="EeFfGgHh…long string…" style={{fontFamily:'monospace',fontSize:'0.8rem'}} />
-          <p style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:'0.3rem'}}>⚠️ This is saved to your private database. Never share this with anyone.</p>
-        </div>
-
-        <div className="form-field">
-          <label>PayPal Environment</label>
-          <select value={payments.paypal_env||'sandbox'} onChange={e=>setP('paypal_env',e.target.value)}>
-            <option value="sandbox">Sandbox (Test Mode — use for testing)</option>
-            <option value="live">Live (Real Money)</option>
-          </select>
-          <p style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:'0.3rem'}}>Use Sandbox to test, then switch to Live when ready for real payments.</p>
-        </div>
-
-        {payments.paypal_client_id && (
-          <div className="paypal-status">
-            ✅ PayPal is configured — customers will see a PayPal payment button when ordering.
-          </div>
-        )}
+        <p style={{fontSize:'0.82rem',color:'var(--text-muted)'}}>Get your keys from <strong>developer.paypal.com</strong> → Apps & Credentials → your app → switch to Live mode.</p>
       </div>
-    </div>
-  )
-}
 
 // ─── Main Admin Shell ─────────────────────────────────────────
 export default function Admin() {

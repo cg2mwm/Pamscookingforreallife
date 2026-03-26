@@ -1,9 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 export default async function handler(req) {
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
-  }
+  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
 
   let body
   try { body = await req.json() } catch {
@@ -11,43 +9,30 @@ export default async function handler(req) {
   }
 
   const { amount, cakeTitle, depositPercent } = body
-  if (!amount) {
-    return new Response(JSON.stringify({ error: 'Missing amount' }), { status: 400 })
+  if (!amount) return new Response(JSON.stringify({ error: 'Missing amount' }), { status: 400 })
+
+  // ── Keys come ONLY from Netlify environment variables ──────
+  const clientId     = process.env.PAYPAL_CLIENT_ID
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET
+  const isProd       = process.env.PAYPAL_ENV === 'live'
+  const baseUrl      = isProd ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com'
+
+  if (!clientId || !clientSecret) {
+    return new Response(JSON.stringify({ error: 'PayPal environment variables not set in Netlify' }), { status: 500 })
   }
-
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
-  )
-
-  const { data: paymentSetting } = await supabase
-    .from('settings')
-    .select('value')
-    .eq('key', 'payments')
-    .single()
-
-  const paypalClientId     = process.env.PAYPAL_CLIENT_ID     || paymentSetting?.value?.paypal_client_id
-  const paypalClientSecret = process.env.PAYPAL_CLIENT_SECRET || paymentSetting?.value?.paypal_client_secret
-
-  if (!paypalClientId || !paypalClientSecret) {
-    return new Response(JSON.stringify({ error: 'PayPal not configured' }), { status: 500 })
-  }
-
-  const isProd  = process.env.PAYPAL_ENV === 'live'
-  const baseUrl = isProd ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com'
 
   // Get access token
-  const tokenRes  = await fetch(`${baseUrl}/v1/oauth2/token`, {
+  const tokenRes = await fetch(`${baseUrl}/v1/oauth2/token`, {
     method: 'POST',
     headers: {
-      'Authorization': 'Basic ' + btoa(`${paypalClientId}:${paypalClientSecret}`),
+      'Authorization': 'Basic ' + btoa(`${clientId}:${clientSecret}`),
       'Content-Type':  'application/x-www-form-urlencoded',
     },
     body: 'grant_type=client_credentials',
   })
   const tokenData = await tokenRes.json()
   if (!tokenRes.ok) {
-    return new Response(JSON.stringify({ error: 'PayPal auth failed' }), { status: 500 })
+    return new Response(JSON.stringify({ error: 'PayPal auth failed: ' + (tokenData.error_description || JSON.stringify(tokenData)) }), { status: 500 })
   }
 
   // Create PayPal order
@@ -61,10 +46,7 @@ export default async function handler(req) {
       intent: 'CAPTURE',
       purchase_units: [{
         description: `${cakeTitle} — ${depositPercent || 30}% deposit`,
-        amount: {
-          currency_code: 'USD',
-          value: Number(amount).toFixed(2),
-        },
+        amount: { currency_code: 'USD', value: Number(amount).toFixed(2) },
       }],
     }),
   })
