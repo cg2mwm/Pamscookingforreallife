@@ -1062,6 +1062,7 @@ export default function Admin() {
         {tab==='messages' && <ContactsDashboard />}
         {tab==='calendar' && <CalendarEditor />}
         {tab==='pages'    && <PageEditor />}
+        {tab==='photos'   && <PhotosAdmin />}
 
         {tab==='cakes' && (
           (newCake||editCake)

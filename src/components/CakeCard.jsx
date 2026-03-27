@@ -19,7 +19,18 @@ export default function CakeCard({ cake }) {
       <div className="cake-card__body">
         <Link to={`/cakes/${cake.id}`}><h3 className="cake-card__title">{cake.title}</h3></Link>
         <p className="cake-card__desc">{cake.description}</p>
+
         {cake.servings && <p className="cake-card__servings">🍽 Serves {cake.servings}</p>}
+
+        {/* Allergens shown right on the card */}
+        {cake.allergens?.length > 0 && (
+          <div className="cake-card__allergens">
+            <span className="cake-card__allergens-label">⚠️ Contains:</span>
+            {cake.allergens.map(a => (
+              <span key={a} className="allergen-tag">{a}</span>
+            ))}
+          </div>
+        )}
 
         <div className="cake-card__footer">
           <div>
@@ -27,7 +38,7 @@ export default function CakeCard({ cake }) {
             <div className="cake-card__deposit">${depositAmt} deposit</div>
           </div>
           {cake.available && (
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display:'flex', gap:'0.5rem' }}>
               <Link to={`/cakes/${cake.id}`} className="btn btn-outline btn-sm">Details</Link>
               <Link to={`/cakes/${cake.id}#order`} className="btn btn-sage btn-sm">Order</Link>
             </div>

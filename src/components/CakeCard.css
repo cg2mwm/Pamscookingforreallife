@@ -23,3 +23,28 @@
 }
 .cake-card__price { font-family: var(--font-display); font-size: 1.6rem; color: var(--sage-dark); line-height: 1; }
 .cake-card__deposit { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
+
+/* Allergens on card */
+.cake-card__allergens {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+.cake-card__allergens-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #c0392b;
+  letter-spacing: 0.03em;
+}
+.allergen-tag {
+  background: #fff0f0;
+  color: #c0392b;
+  border: 1px solid #ffccc7;
+  padding: 0.15rem 0.55rem;
+  border-radius: 100px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
