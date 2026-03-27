@@ -126,3 +126,42 @@ export function buildPaymentLink(payment, amount) {
   if (method === 'CashApp') return `https://cash.app/${payment_id?.startsWith('$') ? payment_id : '$'+payment_id}/${amt}`
   return null
 }
+
+// ── Photos ─────────────────────────────────────────
+export async function getPhotos() {
+  const { data } = await supabase.from('photos').select('*').order('sort_order').order('created_at', { ascending: false })
+  return data || []
+}
+export async function savePhoto(photo) {
+  if (photo.id) { const { id, ...rest } = photo; return supabase.from('photos').update(rest).eq('id', id) }
+  return supabase.from('photos').insert(photo)
+}
+export async function deletePhoto(id) { return supabase.from('photos').delete().eq('id', id) }
+
+// ── Photo Galleries ────────────────────────────────
+export async function getGalleries() {
+  const { data } = await supabase.from('photo_galleries').select('*').order('created_at', { ascending: false })
+  return data || []
+}
+export async function getGallery(id) {
+  const { data } = await supabase.from('photo_galleries').select('*').eq('id', id).single()
+  return data
+}
+export async function saveGallery(gallery) {
+  if (gallery.id) { const { id, ...rest } = gallery; return supabase.from('photo_galleries').update(rest).eq('id', id) }
+  const { data, error } = await supabase.from('photo_galleries').insert(gallery).select().single()
+  if (error) throw error
+  return data
+}
+export async function deleteGallery(id) { return supabase.from('photo_galleries').delete().eq('id', id) }
+
+// ── Gallery Photos ─────────────────────────────────
+export async function getGalleryPhotos(galleryId) {
+  const { data } = await supabase.from('gallery_photos').select('*').eq('gallery_id', galleryId).order('step_number')
+  return data || []
+}
+export async function saveGalleryPhoto(photo) {
+  if (photo.id) { const { id, ...rest } = photo; return supabase.from('gallery_photos').update(rest).eq('id', id) }
+  return supabase.from('gallery_photos').insert(photo)
+}
+export async function deleteGalleryPhoto(id) { return supabase.from('gallery_photos').delete().eq('id', id) }

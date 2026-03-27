@@ -195,3 +195,14 @@
 .paypal-step strong { color:var(--text); }
 .field-hint { font-size:0.72rem; font-weight:400; color:var(--text-muted); margin-left:0.4rem; }
 .paypal-status { background:#e8f5e9; border:1px solid #a5d6a7; color:#2e7d32; padding:0.75rem 1rem; border-radius:var(--radius); font-size:0.88rem; font-weight:500; margin-top:0.5rem; }
+
+/* ── Gallery photo list ───────────────────────── */
+.gallery-photo-list { display:flex; flex-direction:column; gap:0.75rem; }
+.gallery-photo-item {
+  display:grid; grid-template-columns:80px 1fr auto;
+  gap:1rem; align-items:center;
+  background:var(--sage-ghost); padding:0.75rem; border-radius:var(--radius);
+}
+.gallery-photo-item img { width:80px; height:60px; object-fit:cover; border-radius:4px; }
+.gallery-photo-item__info strong { font-size:0.85rem; color:var(--text); display:block; }
+.gallery-photo-item__info p { font-size:0.8rem; color:var(--text-muted); margin-top:0.15rem; }

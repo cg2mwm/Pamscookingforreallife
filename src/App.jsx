@@ -10,6 +10,7 @@ import BooksPage     from './pages/BooksPage'
 import BlogPage      from './pages/BlogPage'
 import BlogPost      from './pages/BlogPost'
 import BookingPage   from './pages/BookingPage'
+import PhotosPage    from './pages/PhotosPage'
 import OrderSuccess  from './pages/OrderSuccess'
 import Admin         from './pages/Admin'
 
@@ -43,6 +44,7 @@ export default function App() {
                 <Route path="/cakes"         element={<CakesPage />} />
                 <Route path="/cakes/:id"     element={<CakeDetail />} />
                 <Route path="/books"         element={<BooksPage />} />
+                <Route path="/photos"        element={<PhotosPage />} />
                 <Route path="/recipes"       element={<BlogPage />} />
                 <Route path="/recipes/:id"   element={<BlogPost />} />
                 <Route path="/booking"       element={<BookingPage />} />

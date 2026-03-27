@@ -4,6 +4,8 @@ import { supabase, getCakes, saveCake, deleteCake, getBooks, saveBook, deleteBoo
   getAvailability, saveAvailability, deleteAvailability,
   getOrders, updateOrderStatus, deleteOrder,
   getContactRequests, updateContactStatus, deleteContactRequest,
+  getGalleries, saveGallery, deleteGallery,
+  getGalleryPhotos, saveGalleryPhoto, deleteGalleryPhoto,
   uploadImage } from '../supabase'
 import { applyTheme, loadFont } from '../components/ApplyTheme'
 import './Admin.css'
@@ -97,7 +99,16 @@ function CakeEditor({ cake, onSave, onCancel }) {
         <div className="form-field"><label>Short Description</label><textarea rows={3} value={f.description} onChange={e=>set('description',e.target.value)} /></div>
         <div className="form-field"><label>Serves</label><input value={f.servings} onChange={e=>set('servings',e.target.value)} placeholder="20-25 people" /></div>
         <ImgUpload label="Main Image" value={f.image_url} onChange={v=>set('image_url',v)} />
-        <div className="form-field"><label>Allergens (comma separated)</label><input value={f.allergens?.join(', ')} onChange={e=>set('allergens',e.target.value.split(',').map(s=>s.trim()).filter(Boolean))} placeholder="Dairy, Gluten, Eggs" /></div>
+        <div className="form-field">
+          <label>Allergens (comma separated)</label>
+          <input
+            value={Array.isArray(f.allergens) ? f.allergens.join(', ') : (f.allergens || '')}
+            onChange={e => set('allergens', e.target.value)}
+            onBlur={e => set('allergens', e.target.value.split(',').map(s=>s.trim()).filter(Boolean))}
+            placeholder="Dairy, Gluten, Eggs"
+          />
+          <span style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>Type them separated by commas, e.g. Dairy, Gluten, Eggs</span>
+        </div>
         <div className="form-field"><label>Full Details</label><textarea rows={6} value={f.body} onChange={e=>set('body',e.target.value)} /></div>
         <div className="toggle-row">
           <label className="toggle"><input type="checkbox" checked={f.available} onChange={e=>set('available',e.target.checked)} /><span>Available for orders</span></label>
@@ -784,6 +795,204 @@ function PageEditor() {
   )
 }
 
+
+// ─── Photos Admin ─────────────────────────────────────────────
+function PhotosAdmin() {
+  const [galleries, setGalleries] = useState([])
+  const [editGallery, setEditGallery] = useState(null) // null = list, obj = editing
+  const [loading, setLoading] = useState(true)
+
+  const load = () => getGalleries().then(d => { setGalleries(d); setLoading(false) })
+  useEffect(() => { load() }, [])
+
+  if (editGallery !== null) {
+    return <GalleryEditor gallery={editGallery === 'new' ? null : editGallery} onSave={() => { load(); setEditGallery(null) }} onCancel={() => setEditGallery(null)} />
+  }
+
+  return (
+    <div>
+      <div className="tab-header">
+        <h2>Photos</h2>
+        <button className="btn btn-sage" onClick={() => setEditGallery('new')}>+ Add New Gallery</button>
+      </div>
+      <p style={{color:'var(--text-muted)',fontSize:'0.9rem',marginBottom:'1.5rem'}}>Each gallery shows the step-by-step process of making a cake, with photos and captions at each stage.</p>
+      {loading ? <p className="loading">Loading…</p>
+        : galleries.length === 0 ? <p className="empty-msg">No galleries yet. Add your first cake process!</p>
+        : (
+          <div className="admin-list">
+            {galleries.map(g => (
+              <div key={g.id} className="admin-item">
+                <div className="admin-item__img">
+                  {g.cover_image ? <img src={g.cover_image} alt={g.title} /> : <div className="img-placeholder">📸</div>}
+                </div>
+                <div className="admin-item__info">
+                  <strong>{g.title}</strong>
+                  <span>{g.category}</span>
+                  {g.description && <p style={{fontSize:'0.8rem',color:'var(--text-muted)',marginTop:'0.2rem'}}>{g.description?.slice(0,80)}{g.description?.length>80?'…':''}</p>}
+                </div>
+                <div className="admin-item__actions">
+                  <button className="btn btn-outline btn-sm" onClick={() => setEditGallery(g)}>Edit & Photos</button>
+                  <button className="btn btn-danger btn-sm" onClick={() => { if(confirm('Delete this gallery and all its photos?')) deleteGallery(g.id).then(load) }}>Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      }
+    </div>
+  )
+}
+
+function GalleryEditor({ gallery, onSave, onCancel }) {
+  const [form, setForm] = useState(gallery || { title:'', description:'', cover_image:'', category:'Cake Process' })
+  const [photos, setPhotos] = useState([])
+  const [saving, setSaving] = useState(false)
+  const [galleryId, setGalleryId] = useState(gallery?.id || null)
+  const [uploading, setUploading] = useState(false)
+  const [newCaption, setNewCaption] = useState('')
+  const [newStep, setNewStep] = useState(0)
+
+  const set = (k,v) => setForm(f => ({...f,[k]:v}))
+
+  useEffect(() => {
+    if (galleryId) getGalleryPhotos(galleryId).then(setPhotos)
+  }, [galleryId])
+
+  const saveDetails = async () => {
+    if (!form.title) return alert('Title is required.')
+    setSaving(true)
+    if (galleryId) {
+      const { id, ...rest } = { ...form, id: galleryId }
+      await supabase.from('photo_galleries').update(rest).eq('id', galleryId)
+    } else {
+      const result = await saveGallery(form)
+      if (result?.id) setGalleryId(result.id)
+    }
+    setSaving(false)
+  }
+
+  const handleUploadPhoto = async (e) => {
+    const file = e.target.files[0]; if (!file) return
+    if (!galleryId) {
+      // Save gallery first if not saved yet
+      if (!form.title) return alert('Please enter a title and save the gallery details first.')
+      setSaving(true)
+      const result = await saveGallery(form)
+      if (result?.id) {
+        setGalleryId(result.id)
+        setSaving(false)
+        // continue with upload using result.id
+        setUploading(true)
+        try {
+          const url = await uploadImage(file)
+          await saveGalleryPhoto({ gallery_id: result.id, image_url: url, caption: newCaption, step_number: newStep || photos.length + 1 })
+          getGalleryPhotos(result.id).then(setPhotos)
+          setNewCaption(''); setNewStep(0)
+        } catch(err) { alert('Upload failed: ' + err.message) }
+        setUploading(false)
+        return
+      }
+      setSaving(false)
+      return
+    }
+    setUploading(true)
+    try {
+      const url = await uploadImage(file)
+      await saveGalleryPhoto({ gallery_id: galleryId, image_url: url, caption: newCaption, step_number: newStep || photos.length + 1 })
+      getGalleryPhotos(galleryId).then(setPhotos)
+      setNewCaption(''); setNewStep(0)
+    } catch(err) { alert('Upload failed: ' + err.message) }
+    setUploading(false)
+  }
+
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files[0]; if (!file) return
+    setUploading(true)
+    try { set('cover_image', await uploadImage(file)) }
+    catch(err) { alert('Upload failed: ' + err.message) }
+    setUploading(false)
+  }
+
+  const removePhoto = async (id) => {
+    if (!confirm('Remove this photo?')) return
+    await deleteGalleryPhoto(id)
+    getGalleryPhotos(galleryId).then(setPhotos)
+  }
+
+  return (
+    <div className="editor-panel">
+      <div className="editor-header">
+        <h3>{gallery ? 'Edit Gallery' : 'New Gallery'}</h3>
+        <div style={{display:'flex',gap:'0.5rem'}}>
+          <button className="btn btn-outline btn-sm" onClick={onCancel}>← Back</button>
+          <button className="btn btn-sage btn-sm" onClick={async () => { await saveDetails(); onSave() }} disabled={saving}>{saving?'Saving…':'Save & Close'}</button>
+        </div>
+      </div>
+      <div className="editor-body">
+
+        {/* Gallery details */}
+        <div className="settings-section">
+          <h4>Gallery Details</h4>
+          <div className="form-row-2">
+            <div className="form-field"><label>Gallery Title *</label><input value={form.title} onChange={e=>set('title',e.target.value)} placeholder="Strawberry Shortcake — How It's Made" /></div>
+            <div className="form-field"><label>Category</label>
+              <select value={form.category} onChange={e=>set('category',e.target.value)}>
+                {['Cake Process','Wedding','Birthday','Custom','Behind the Scenes','Decoration'].map(c=><option key={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="form-field"><label>Description (optional)</label><textarea rows={2} value={form.description} onChange={e=>set('description',e.target.value)} placeholder="A behind-the-scenes look at how this beauty comes together…" /></div>
+          <div className="form-field">
+            <label>Cover Image (shown on the gallery listing)</label>
+            <div className="img-upload-row">
+              {form.cover_image && <img src={form.cover_image} alt="" className="img-thumb" />}
+              <label className="btn btn-outline btn-sm" style={{cursor:'pointer'}}>
+                {form.cover_image ? 'Replace Cover' : 'Upload Cover'}
+                <input type="file" accept="image/*" onChange={handleCoverUpload} style={{display:'none'}} />
+              </label>
+            </div>
+          </div>
+          <button className="btn btn-outline btn-sm" onClick={saveDetails} disabled={saving}>{saving?'Saving…':'Save Details'}</button>
+        </div>
+
+        {/* Add photos */}
+        <div className="settings-section">
+          <h4>Add a Photo</h4>
+          <p style={{fontSize:'0.85rem',color:'var(--text-muted)',marginBottom:'1rem'}}>Add photos one at a time. Each photo can have a step number and a caption describing what's happening in that step.</p>
+          <div className="form-row-2">
+            <div className="form-field"><label>Step Number (optional)</label><input type="number" value={newStep || ''} onChange={e=>setNewStep(parseInt(e.target.value)||0)} placeholder="e.g. 1, 2, 3…" /></div>
+            <div className="form-field"><label>Caption / Description</label><input value={newCaption} onChange={e=>setNewCaption(e.target.value)} placeholder="Mixing the batter until just combined…" /></div>
+          </div>
+          <label className={`btn btn-sage ${uploading?'disabled':''}`} style={{cursor:'pointer',alignSelf:'flex-start'}}>
+            {uploading ? 'Uploading…' : '📷 Upload Photo'}
+            <input type="file" accept="image/*" onChange={handleUploadPhoto} style={{display:'none'}} disabled={uploading} />
+          </label>
+          {!galleryId && <p style={{fontSize:'0.78rem',color:'var(--text-muted)',marginTop:'0.5rem'}}>Save the gallery details above first, then you can add photos.</p>}
+        </div>
+
+        {/* Existing photos */}
+        {photos.length > 0 && (
+          <div className="settings-section">
+            <h4>Photos in this Gallery ({photos.length})</h4>
+            <div className="gallery-photo-list">
+              {photos.map((photo, i) => (
+                <div key={photo.id} className="gallery-photo-item">
+                  <img src={photo.image_url} alt={photo.caption || `Step ${i+1}`} />
+                  <div className="gallery-photo-item__info">
+                    <strong>Step {photo.step_number || i+1}</strong>
+                    <p>{photo.caption || <em style={{color:'#bbb'}}>No caption</em>}</p>
+                  </div>
+                  <button className="btn btn-danger btn-sm" onClick={() => removePhoto(photo.id)}>Remove</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Admin Shell ─────────────────────────────────────────
 export default function Admin() {
   const [user, setUser] = useState(undefined)
@@ -825,6 +1034,7 @@ export default function Admin() {
     {id:'recipes',  label:'📖 Recipes'},
     {id:'calendar', label:'📅 Calendar'},
     {id:'pages',    label:'✏️ Edit Site'},
+    {id:'photos',   label:'📸 Photos'},
   ]
 
   return (

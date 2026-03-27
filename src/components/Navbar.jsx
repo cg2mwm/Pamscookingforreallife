@@ -16,7 +16,9 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', fn)
   }, [])
   useEffect(() => setOpen(false), [location])
-  useEffect(() => { getSetting('homepage').then(d => { if (d?.bakeryName) setName(d.bakeryName) }) }, [])
+  useEffect(() => {
+    getSetting('homepage').then(d => { if (d?.bakeryName) setName(d.bakeryName) })
+  }, [])
 
   const solid = !isHome || scrolled
   return (
@@ -26,6 +28,7 @@ export default function Navbar() {
         <nav className={`navbar__links ${open ? 'is-open' : ''}`}>
           <NavLink to="/cakes">Cakes</NavLink>
           <NavLink to="/books">Books</NavLink>
+          <NavLink to="/photos">Photos</NavLink>
           <NavLink to="/recipes">Recipes</NavLink>
           <NavLink to="/booking">Book a Consult</NavLink>
         </nav>
