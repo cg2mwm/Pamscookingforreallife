@@ -206,3 +206,16 @@
 .gallery-photo-item img { width:80px; height:60px; object-fit:cover; border-radius:4px; }
 .gallery-photo-item__info strong { font-size:0.85rem; color:var(--text); display:block; }
 .gallery-photo-item__info p { font-size:0.8rem; color:var(--text-muted); margin-top:0.15rem; }
+
+/* ── Sortable list ─────────────────────────────── */
+.sortable-list { display:flex; flex-direction:column; gap:0.75rem; }
+.sortable-item { display:flex; align-items:stretch; gap:0; border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); background:var(--white); cursor:grab; transition:opacity 0.2s, box-shadow 0.2s; }
+.sortable-item:active { cursor:grabbing; }
+.sortable-item.dragging { opacity:0.4; }
+.sortable-item.drag-over { box-shadow:0 0 0 2px var(--sage), var(--shadow-hover); }
+.drag-handle { display:flex; align-items:center; justify-content:center; width:36px; background:var(--sage-pale); color:var(--sage-mid); font-size:1.2rem; cursor:grab; flex-shrink:0; letter-spacing:-2px; user-select:none; }
+.drag-handle:hover { background:var(--sage-light); color:var(--sage-dark); }
+.sortable-item .admin-item { flex:1; box-shadow:none; border-radius:0; }
+.sort-hint { font-size:0.78rem; color:var(--text-muted); margin-bottom:0.5rem; font-style:italic; }
+
+/* ── Custom category ──────────────────────────── */

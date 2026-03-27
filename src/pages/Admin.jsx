@@ -6,9 +6,83 @@ import { supabase, getCakes, saveCake, deleteCake, getBooks, saveBook, deleteBoo
   getContactRequests, updateContactStatus, deleteContactRequest,
   getGalleries, saveGallery, deleteGallery,
   getGalleryPhotos, saveGalleryPhoto, deleteGalleryPhoto,
+  updateSortOrder,
   uploadImage } from '../supabase'
 import { applyTheme, loadFont } from '../components/ApplyTheme'
 import './Admin.css'
+
+
+// ─── Sortable List (drag to reorder) ─────────────────────────
+function SortableList({ items, onReorder, renderItem }) {
+  const [dragging, setDragging] = useState(null)
+  const [dragOver, setDragOver] = useState(null)
+
+  const handleDragStart = (e, index) => {
+    setDragging(index)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+  const handleDragOver = (e, index) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOver(index)
+  }
+  const handleDrop = (e, index) => {
+    e.preventDefault()
+    if (dragging === null || dragging === index) { setDragging(null); setDragOver(null); return }
+    const reordered = [...items]
+    const [moved] = reordered.splice(dragging, 1)
+    reordered.splice(index, 0, moved)
+    onReorder(reordered)
+    setDragging(null)
+    setDragOver(null)
+  }
+  const handleDragEnd = () => { setDragging(null); setDragOver(null) }
+
+  return (
+    <div className="sortable-list">
+      {items.map((item, i) => (
+        <div
+          key={item.id}
+          className={`sortable-item ${dragging === i ? 'dragging' : ''} ${dragOver === i ? 'drag-over' : ''}`}
+          draggable
+          onDragStart={e => handleDragStart(e, i)}
+          onDragOver={e => handleDragOver(e, i)}
+          onDrop={e => handleDrop(e, i)}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="drag-handle" title="Drag to reorder">⠿</div>
+          {renderItem(item)}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Custom Category Input ────────────────────────────────────
+function CategoryInput({ value, onChange, options }) {
+  const [custom, setCustom] = useState(false)
+  const isCustom = value && !options.includes(value)
+
+  return (
+    <div className="form-field">
+      <label>Category</label>
+      {(!custom && !isCustom) ? (
+        <div style={{display:'flex',gap:'0.5rem'}}>
+          <select value={value} onChange={e => { if (e.target.value === '__custom__') setCustom(true); else onChange(e.target.value) }} style={{flex:1}}>
+            <option value="">Select…</option>
+            {options.map(o => <option key={o}>{o}</option>)}
+            <option value="__custom__">+ Type a custom category…</option>
+          </select>
+        </div>
+      ) : (
+        <div style={{display:'flex',gap:'0.5rem'}}>
+          <input value={value} onChange={e => onChange(e.target.value)} placeholder="Type your category…" style={{flex:1}} autoFocus />
+          <button className="btn btn-outline btn-sm" onClick={() => { onChange(''); setCustom(false) }}>← Back</button>
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ─── Login ───────────────────────────────────────────────────
 function LoginScreen() {
@@ -85,12 +159,7 @@ function CakeEditor({ cake, onSave, onCancel }) {
       <div className="editor-body">
         <div className="form-row-2">
           <div className="form-field"><label>Cake Name *</label><input value={f.title} onChange={e=>set('title',e.target.value)} /></div>
-          <div className="form-field"><label>Category</label>
-            <select value={f.category} onChange={e=>set('category',e.target.value)}>
-              <option value="">Select…</option>
-              {['Wedding','Birthday','Anniversary','Custom','Seasonal'].map(c=><option key={c}>{c}</option>)}
-            </select>
-          </div>
+          <CategoryInput value={f.category} onChange={v=>set('category',v)} options={['Wedding','Birthday','Anniversary','Custom','Seasonal']} />
         </div>
         <div className="form-row-2">
           <div className="form-field"><label>Price ($) *</label><input type="number" value={f.price} onChange={e=>set('price',e.target.value)} /></div>
@@ -819,24 +888,29 @@ function PhotosAdmin() {
       {loading ? <p className="loading">Loading…</p>
         : galleries.length === 0 ? <p className="empty-msg">No galleries yet. Add your first cake process!</p>
         : (
-          <div className="admin-list">
-            {galleries.map(g => (
-              <div key={g.id} className="admin-item">
-                <div className="admin-item__img">
-                  {g.cover_image ? <img src={g.cover_image} alt={g.title} /> : <div className="img-placeholder">📸</div>}
+          <>
+            <p className="sort-hint">⠿ Drag to reorder galleries</p>
+            <SortableList
+              items={galleries}
+              onReorder={reordered => { setGalleries(reordered); updateSortOrder('photo_galleries', reordered) }}
+              renderItem={g => (
+                <div className="admin-item">
+                  <div className="admin-item__img">
+                    {g.cover_image ? <img src={g.cover_image} alt={g.title} /> : <div className="img-placeholder">📸</div>}
+                  </div>
+                  <div className="admin-item__info">
+                    <strong>{g.title}</strong>
+                    <span>{g.category}</span>
+                    {g.description && <p style={{fontSize:'0.8rem',color:'var(--text-muted)',marginTop:'0.2rem'}}>{g.description?.slice(0,80)}{g.description?.length>80?'…':''}</p>}
+                  </div>
+                  <div className="admin-item__actions">
+                    <button className="btn btn-outline btn-sm" onClick={() => setEditGallery(g)}>Edit & Photos</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => { if(confirm('Delete this gallery and all its photos?')) deleteGallery(g.id).then(load) }}>Delete</button>
+                  </div>
                 </div>
-                <div className="admin-item__info">
-                  <strong>{g.title}</strong>
-                  <span>{g.category}</span>
-                  {g.description && <p style={{fontSize:'0.8rem',color:'var(--text-muted)',marginTop:'0.2rem'}}>{g.description?.slice(0,80)}{g.description?.length>80?'…':''}</p>}
-                </div>
-                <div className="admin-item__actions">
-                  <button className="btn btn-outline btn-sm" onClick={() => setEditGallery(g)}>Edit & Photos</button>
-                  <button className="btn btn-danger btn-sm" onClick={() => { if(confirm('Delete this gallery and all its photos?')) deleteGallery(g.id).then(load) }}>Delete</button>
-                </div>
-              </div>
-            ))}
-          </div>
+              )}
+            />
+          </>
         )
       }
     </div>
@@ -936,9 +1010,7 @@ function GalleryEditor({ gallery, onSave, onCancel }) {
           <div className="form-row-2">
             <div className="form-field"><label>Gallery Title *</label><input value={form.title} onChange={e=>set('title',e.target.value)} placeholder="Strawberry Shortcake — How It's Made" /></div>
             <div className="form-field"><label>Category</label>
-              <select value={form.category} onChange={e=>set('category',e.target.value)}>
-                {['Cake Process','Wedding','Birthday','Custom','Behind the Scenes','Decoration'].map(c=><option key={c}>{c}</option>)}
-              </select>
+              <CategoryInput value={form.category} onChange={v=>set('category',v)} options={['Cake Process','Wedding','Birthday','Custom','Behind the Scenes','Decoration']} />
             </div>
           </div>
           <div className="form-field"><label>Description (optional)</label><textarea rows={2} value={form.description} onChange={e=>set('description',e.target.value)} placeholder="A behind-the-scenes look at how this beauty comes together…" /></div>

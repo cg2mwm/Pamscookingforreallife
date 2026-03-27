@@ -6,7 +6,7 @@ export const supabase = createClient(url, key)
 
 // ── Cakes ──────────────────────────────────────────
 export async function getCakes() {
-  const { data } = await supabase.from('cakes').select('*').order('featured', { ascending: false })
+  const { data } = await supabase.from('cakes').select('*').order('sort_order').order('created_at', { ascending: false })
   return data || []
 }
 export async function getCake(id) {
@@ -21,7 +21,7 @@ export async function deleteCake(id) { return supabase.from('cakes').delete().eq
 
 // ── Books ──────────────────────────────────────────
 export async function getBooks() {
-  const { data } = await supabase.from('books').select('*').order('featured', { ascending: false })
+  const { data } = await supabase.from('books').select('*').order('sort_order').order('created_at', { ascending: false })
   return data || []
 }
 export async function saveBook(book) {
@@ -32,7 +32,7 @@ export async function deleteBook(id) { return supabase.from('books').delete().eq
 
 // ── Blog ───────────────────────────────────────────
 export async function getPosts() {
-  const { data } = await supabase.from('blog_posts').select('*').order('date', { ascending: false })
+  const { data } = await supabase.from('blog_posts').select('*').order('sort_order').order('date', { ascending: false })
   return data || []
 }
 export async function getPost(id) {
@@ -140,7 +140,7 @@ export async function deletePhoto(id) { return supabase.from('photos').delete().
 
 // ── Photo Galleries ────────────────────────────────
 export async function getGalleries() {
-  const { data } = await supabase.from('photo_galleries').select('*').order('created_at', { ascending: false })
+  const { data } = await supabase.from('photo_galleries').select('*').order('sort_order').order('created_at', { ascending: false })
   return data || []
 }
 export async function getGallery(id) {
@@ -165,3 +165,12 @@ export async function saveGalleryPhoto(photo) {
   return supabase.from('gallery_photos').insert(photo)
 }
 export async function deleteGalleryPhoto(id) { return supabase.from('gallery_photos').delete().eq('id', id) }
+
+// ── Sort Order ─────────────────────────────────────
+export async function updateSortOrder(table, items) {
+  // items = array of {id, sort_order}
+  const updates = items.map((item, i) =>
+    supabase.from(table).update({ sort_order: i }).eq('id', item.id)
+  )
+  await Promise.all(updates)
+}
