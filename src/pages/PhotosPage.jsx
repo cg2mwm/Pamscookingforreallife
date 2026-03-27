@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getGalleries, getGalleryPhotos } from '../supabase'
+import { getGalleries, getGalleryPhotos, getSetting } from '../supabase'
 import './PhotosPage.css'
 
 function GalleryDetail({ gallery, onBack }) {
@@ -77,9 +77,11 @@ export default function PhotosPage() {
   const [loading, setLoading]     = useState(true)
   const [active, setActive]       = useState(null)
   const [filter, setFilter]       = useState('All')
+  const [pg, setPg]               = useState({})
 
   useEffect(() => {
     getGalleries().then(d => { setGalleries(d); setLoading(false) })
+    getSetting('page_photos').then(d => setPg(d || {}))
   }, [])
 
   if (active) return <GalleryDetail gallery={active} onBack={() => setActive(null)} />
@@ -91,8 +93,8 @@ export default function PhotosPage() {
     <div>
       <div className="page-header">
         <div className="container">
-          <h1>Photo Gallery</h1>
-          <p>See how Pam's cakes come together — from first ingredients to final decoration.</p>
+          <h1>{pg.heading || 'Photo Gallery'}</h1>
+          <p>{pg.subtext || "See how Pam's cakes come together — from first ingredients to final decoration."}</p>
         </div>
       </div>
 
