@@ -661,6 +661,7 @@ const PAGES_LIST = [
   {key:'page_books',   label:'📚 Books'},
   {key:'page_recipes', label:'📖 Recipes'},
   {key:'page_booking', label:'📅 Booking'},
+  {key:'page_photos',  label:'📸 Photos'},
 ]
 
 function PageEditor() {
@@ -1142,25 +1143,30 @@ export default function Admin() {
             : <>
                 <div className="tab-header"><h2>Cakes</h2><button className="btn btn-sage" onClick={()=>setNewCake(true)}>+ Add New Cake</button></div>
                 {cakes.length===0 ? <p className="empty-msg">No cakes yet.</p> : (
-                  <div className="admin-list">
-                    {cakes.map(c=>(
-                      <div key={c.id} className="admin-item">
-                        <div className="admin-item__img">{c.image_url?<img src={c.image_url} alt="" />:<div className="img-placeholder">🎂</div>}</div>
-                        <div className="admin-item__info">
-                          <strong>{c.title}</strong>
-                          <span>${Number(c.price).toLocaleString()} · {c.category}</span>
-                          <div style={{display:'flex',gap:'0.4rem',marginTop:'0.3rem',flexWrap:'wrap'}}>
-                            {c.featured&&<span className="badge badge-brown">Featured</span>}
-                            <span className="badge" style={c.available?{background:'var(--sage-pale)',color:'var(--sage-dark)'}:{background:'#fee',color:'#c0392b'}}>{c.available?'Available':'Unavailable'}</span>
+                  <>
+                    <p className="sort-hint">⠿ Drag the handle to reorder</p>
+                    <SortableList
+                      items={cakes}
+                      onReorder={r=>{ setCakes(r); updateSortOrder('cakes',r) }}
+                      renderItem={c=>(
+                        <div className="admin-item">
+                          <div className="admin-item__img">{c.image_url?<img src={c.image_url} alt=""/>:<div className="img-placeholder">🎂</div>}</div>
+                          <div className="admin-item__info">
+                            <strong>{c.title}</strong>
+                            <span>${Number(c.price).toLocaleString()} · {c.category}</span>
+                            <div style={{display:'flex',gap:'0.4rem',marginTop:'0.3rem',flexWrap:'wrap'}}>
+                              {c.featured&&<span className="badge badge-brown">Featured</span>}
+                              <span className="badge" style={c.available?{background:'var(--sage-pale)',color:'var(--sage-dark)'}:{background:'#fee',color:'#c0392b'}}>{c.available?'Available':'Unavailable'}</span>
+                            </div>
+                          </div>
+                          <div className="admin-item__actions">
+                            <button className="btn btn-outline btn-sm" onClick={()=>setEditCake(c)}>Edit</button>
+                            <button className="btn btn-danger btn-sm" onClick={()=>{ if(confirm('Delete?')) deleteCake(c.id).then(()=>getCakes().then(setCakes)) }}>Delete</button>
                           </div>
                         </div>
-                        <div className="admin-item__actions">
-                          <button className="btn btn-outline btn-sm" onClick={()=>setEditCake(c)}>Edit</button>
-                          <button className="btn btn-danger btn-sm" onClick={()=>{ if(confirm('Delete?')) deleteCake(c.id).then(()=>getCakes().then(setCakes)) }}>Delete</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      )}
+                    />
+                  </>
                 )}
               </>
         )}
@@ -1171,21 +1177,26 @@ export default function Admin() {
             : <>
                 <div className="tab-header"><h2>Books & Cookbooks</h2><button className="btn btn-sage" onClick={()=>setNewBook(true)}>+ Add New Book</button></div>
                 {books.length===0 ? <p className="empty-msg">No books yet.</p> : (
-                  <div className="admin-list">
-                    {books.map(b=>(
-                      <div key={b.id} className="admin-item">
-                        <div className="admin-item__img">{b.image_url?<img src={b.image_url} alt="" />:<div className="img-placeholder">📚</div>}</div>
-                        <div className="admin-item__info">
-                          <strong>{b.title}</strong>
-                          <span>${Number(b.price).toFixed(2)} · {b.category}</span>
+                  <>
+                    <p className="sort-hint">⠿ Drag the handle to reorder</p>
+                    <SortableList
+                      items={books}
+                      onReorder={r=>{ setBooks(r); updateSortOrder('books',r) }}
+                      renderItem={b=>(
+                        <div className="admin-item">
+                          <div className="admin-item__img">{b.image_url?<img src={b.image_url} alt=""/>:<div className="img-placeholder">📚</div>}</div>
+                          <div className="admin-item__info">
+                            <strong>{b.title}</strong>
+                            <span>${Number(b.price).toFixed(2)} · {b.category}</span>
+                          </div>
+                          <div className="admin-item__actions">
+                            <button className="btn btn-outline btn-sm" onClick={()=>setEditBook(b)}>Edit</button>
+                            <button className="btn btn-danger btn-sm" onClick={()=>{ if(confirm('Delete?')) deleteBook(b.id).then(()=>getBooks().then(setBooks)) }}>Delete</button>
+                          </div>
                         </div>
-                        <div className="admin-item__actions">
-                          <button className="btn btn-outline btn-sm" onClick={()=>setEditBook(b)}>Edit</button>
-                          <button className="btn btn-danger btn-sm" onClick={()=>{ if(confirm('Delete?')) deleteBook(b.id).then(()=>getBooks().then(setBooks)) }}>Delete</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      )}
+                    />
+                  </>
                 )}
               </>
         )}
@@ -1196,22 +1207,27 @@ export default function Admin() {
             : <>
                 <div className="tab-header"><h2>Recipes & Blog</h2><button className="btn btn-sage" onClick={()=>setNewPost(true)}>+ Add New Post</button></div>
                 {posts.length===0 ? <p className="empty-msg">No posts yet.</p> : (
-                  <div className="admin-list">
-                    {posts.map(p=>(
-                      <div key={p.id} className="admin-item">
-                        <div className="admin-item__img">{p.image_url?<img src={p.image_url} alt="" />:<div className="img-placeholder">📖</div>}</div>
-                        <div className="admin-item__info">
-                          <strong>{p.title}</strong>
-                          <span>{new Date(p.date).toLocaleDateString()}</span>
-                          <p style={{fontSize:'0.8rem',color:'var(--text-muted)',marginTop:'0.2rem'}}>{p.excerpt?.slice(0,80)}{p.excerpt?.length>80?'…':''}</p>
+                  <>
+                    <p className="sort-hint">⠿ Drag the handle to reorder</p>
+                    <SortableList
+                      items={posts}
+                      onReorder={r=>{ setPosts(r); updateSortOrder('blog_posts',r) }}
+                      renderItem={p=>(
+                        <div className="admin-item">
+                          <div className="admin-item__img">{p.image_url?<img src={p.image_url} alt=""/>:<div className="img-placeholder">📖</div>}</div>
+                          <div className="admin-item__info">
+                            <strong>{p.title}</strong>
+                            <span>{new Date(p.date).toLocaleDateString()}</span>
+                            <p style={{fontSize:'0.8rem',color:'var(--text-muted)',marginTop:'0.2rem'}}>{p.excerpt?.slice(0,80)}{p.excerpt?.length>80?'…':''}</p>
+                          </div>
+                          <div className="admin-item__actions">
+                            <button className="btn btn-outline btn-sm" onClick={()=>setEditPost(p)}>Edit</button>
+                            <button className="btn btn-danger btn-sm" onClick={()=>{ if(confirm('Delete?')) deletePost(p.id).then(()=>getPosts().then(setPosts)) }}>Delete</button>
+                          </div>
                         </div>
-                        <div className="admin-item__actions">
-                          <button className="btn btn-outline btn-sm" onClick={()=>setEditPost(p)}>Edit</button>
-                          <button className="btn btn-danger btn-sm" onClick={()=>{ if(confirm('Delete?')) deletePost(p.id).then(()=>getPosts().then(setPosts)) }}>Delete</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      )}
+                    />
+                  </>
                 )}
               </>
         )}
