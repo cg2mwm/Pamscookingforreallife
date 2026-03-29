@@ -12,6 +12,12 @@ import { applyTheme, loadFont } from '../components/ApplyTheme'
 import './Admin.css'
 
 
+// ─── Normalize category: trim + Title Case ────────────────────
+function normalizeCategory(val) {
+  if (!val) return ''
+  return val.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+}
+
 // ─── Sortable List (drag to reorder) ─────────────────────────
 function SortableList({ items, onReorder, renderItem }) {
   const [dragging, setDragging] = useState(null)
@@ -71,7 +77,7 @@ function CategoryInput({ value, onChange, options, existingCategories=[] }) {
       <label>Category</label>
       {(!custom && !isCustom) ? (
         <div style={{display:'flex',gap:'0.5rem'}}>
-          <select value={value} onChange={e => { if (e.target.value === '__custom__') setCustom(true); else onChange(e.target.value) }} style={{flex:1}}>
+          <select value={value} onChange={e => { if (e.target.value === '__custom__') setCustom(true); else onChange(normalizeCategory(e.target.value)) }} style={{flex:1}}>
             <option value="">Select…</option>
             {allOptions.map(o => <option key={o}>{o}</option>)}
             <option value="__custom__">+ Type a new custom category…</option>
@@ -79,8 +85,8 @@ function CategoryInput({ value, onChange, options, existingCategories=[] }) {
         </div>
       ) : (
         <div style={{display:'flex',gap:'0.5rem'}}>
-          <input value={value} onChange={e => onChange(e.target.value)} placeholder="Type your category…" style={{flex:1}} autoFocus />
-          <button className="btn btn-outline btn-sm" onClick={() => { onChange(''); setCustom(false) }}>← Back</button>
+          <input value={value} onChange={e => onChange(e.target.value)} onBlur={e => onChange(normalizeCategory(e.target.value))} placeholder="Type your category…" style={{flex:1}} autoFocus />
+          <button className="btn btn-outline btn-sm" onClick={() => { onChange(normalizeCategory(value)); setCustom(false) }}>← Back</button>
         </div>
       )}
     </div>
@@ -148,7 +154,7 @@ function CakeEditor({ cake, onSave, onCancel, existingCakeCats=[] }) {
   const set = (k,v) => setF(x=>({...x,[k]:v}))
   const save = async () => {
     if (!f.title||!f.price) return alert('Title and price required.')
-    setSaving(true); await saveCake({...f,price:parseFloat(f.price)}); setSaving(false); onSave()
+    setSaving(true); await saveCake({...f,price:parseFloat(f.price),category:normalizeCategory(f.category)}); setSaving(false); onSave()
   }
   return (
     <div className="editor-panel">
@@ -198,7 +204,7 @@ function BookEditor({ book, onSave, onCancel, existingBookCats=[] }) {
   const set = (k,v) => setF(x=>({...x,[k]:v}))
   const save = async () => {
     if (!f.title||!f.price) return alert('Title and price required.')
-    setSaving(true); await saveBook({...f,price:parseFloat(f.price)}); setSaving(false); onSave()
+    setSaving(true); await saveBook({...f,price:parseFloat(f.price),category:normalizeCategory(f.category)}); setSaving(false); onSave()
   }
   return (
     <div className="editor-panel">
@@ -235,7 +241,7 @@ function PostEditor({ post, onSave, onCancel, existingPostCats=[] }) {
   const save = async () => {
     if (!f.title) return alert('Title required.')
     setSaving(true)
-    await savePost({...f, tags: typeof f.tags==='string'?f.tags.split(',').map(s=>s.trim()):f.tags})
+    await savePost({...f, tags: typeof f.tags==='string'?f.tags.split(',').map(s=>s.trim()):f.tags, category:normalizeCategory(f.category)})
     setSaving(false); onSave()
   }
   return (
