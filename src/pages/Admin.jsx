@@ -59,9 +59,12 @@ function SortableList({ items, onReorder, renderItem }) {
 }
 
 // ─── Custom Category Input ────────────────────────────────────
-function CategoryInput({ value, onChange, options }) {
+function CategoryInput({ value, onChange, options, existingCategories=[] }) {
   const [custom, setCustom] = useState(false)
+  // A value is "custom" if it's not in the built-in options list
   const isCustom = value && !options.includes(value)
+  // Merge built-in options with any custom categories already in use, deduplicated
+  const allOptions = [...new Set([...options, ...existingCategories.filter(c => c && !options.includes(c))])]
 
   return (
     <div className="form-field">
@@ -70,8 +73,8 @@ function CategoryInput({ value, onChange, options }) {
         <div style={{display:'flex',gap:'0.5rem'}}>
           <select value={value} onChange={e => { if (e.target.value === '__custom__') setCustom(true); else onChange(e.target.value) }} style={{flex:1}}>
             <option value="">Select…</option>
-            {options.map(o => <option key={o}>{o}</option>)}
-            <option value="__custom__">+ Type a custom category…</option>
+            {allOptions.map(o => <option key={o}>{o}</option>)}
+            <option value="__custom__">+ Type a new custom category…</option>
           </select>
         </div>
       ) : (
@@ -139,7 +142,7 @@ function ImgUpload({ label, value, onChange }) {
 }
 
 // ─── Cake Editor ─────────────────────────────────────────────
-function CakeEditor({ cake, onSave, onCancel }) {
+function CakeEditor({ cake, onSave, onCancel, existingCakeCats=[] }) {
   const [f, setF] = useState(cake || {title:'',price:'',deposit_percent:30,description:'',category:'',servings:'',available:true,featured:false,image_url:'',allergens:[],body:''})
   const [saving, setSaving] = useState(false)
   const set = (k,v) => setF(x=>({...x,[k]:v}))
@@ -159,7 +162,7 @@ function CakeEditor({ cake, onSave, onCancel }) {
       <div className="editor-body">
         <div className="form-row-2">
           <div className="form-field"><label>Cake Name *</label><input value={f.title} onChange={e=>set('title',e.target.value)} /></div>
-          <CategoryInput value={f.category} onChange={v=>set('category',v)} options={['Wedding','Birthday','Anniversary','Custom','Seasonal']} />
+          <CategoryInput value={f.category} onChange={v=>set('category',v)} options={['Wedding','Birthday','Anniversary','Custom','Seasonal']} existingCategories={existingCakeCats} />
         </div>
         <div className="form-row-2">
           <div className="form-field"><label>Price ($) *</label><input type="number" value={f.price} onChange={e=>set('price',e.target.value)} /></div>
@@ -189,7 +192,7 @@ function CakeEditor({ cake, onSave, onCancel }) {
 }
 
 // ─── Book Editor ─────────────────────────────────────────────
-function BookEditor({ book, onSave, onCancel }) {
+function BookEditor({ book, onSave, onCancel, existingBookCats=[] }) {
   const [f, setF] = useState(book || {title:'',price:'',description:'',category:'Cookbook',image_url:'',buy_link:'',available:true,featured:false})
   const [saving, setSaving] = useState(false)
   const set = (k,v) => setF(x=>({...x,[k]:v}))
@@ -209,11 +212,7 @@ function BookEditor({ book, onSave, onCancel }) {
       <div className="editor-body">
         <div className="form-row-2">
           <div className="form-field"><label>Title *</label><input value={f.title} onChange={e=>set('title',e.target.value)} /></div>
-          <div className="form-field"><label>Category</label>
-            <select value={f.category} onChange={e=>set('category',e.target.value)}>
-              {['Cookbook','Recipe Book','Other'].map(c=><option key={c}>{c}</option>)}
-            </select>
-          </div>
+          <CategoryInput value={f.category||'Cookbook'} onChange={v=>set('category',v)} options={['Cookbook','Recipe Book','Other']} existingCategories={existingBookCats} />
         </div>
         <div className="form-field"><label>Price ($) *</label><input type="number" value={f.price} onChange={e=>set('price',e.target.value)} /></div>
         <div className="form-field"><label>Description</label><textarea rows={3} value={f.description} onChange={e=>set('description',e.target.value)} /></div>
@@ -229,8 +228,8 @@ function BookEditor({ book, onSave, onCancel }) {
 }
 
 // ─── Post Editor ─────────────────────────────────────────────
-function PostEditor({ post, onSave, onCancel }) {
-  const [f, setF] = useState(post || {title:'',date:new Date().toISOString().split('T')[0],excerpt:'',image_url:'',external_video_url:'',tags:[],body:''})
+function PostEditor({ post, onSave, onCancel, existingPostCats=[] }) {
+  const [f, setF] = useState(post || {title:'',date:new Date().toISOString().split('T')[0],excerpt:'',category:'',image_url:'',external_video_url:'',tags:[],body:''})
   const [saving, setSaving] = useState(false)
   const set = (k,v) => setF(x=>({...x,[k]:v}))
   const save = async () => {
@@ -253,6 +252,7 @@ function PostEditor({ post, onSave, onCancel }) {
           <div className="form-field"><label>Title *</label><input value={f.title} onChange={e=>set('title',e.target.value)} /></div>
           <div className="form-field"><label>Date</label><input type="date" value={f.date?.split('T')[0]} onChange={e=>set('date',e.target.value)} /></div>
         </div>
+        <CategoryInput value={f.category||''} onChange={v=>set('category',v)} options={['Recipe','Tutorial','Tips & Tricks','Seasonal','Story','Behind the Scenes']} existingCategories={existingPostCats} />
         <div className="form-field"><label>Excerpt</label><textarea rows={2} value={f.excerpt} onChange={e=>set('excerpt',e.target.value)} /></div>
         <ImgUpload label="Hero Image" value={f.image_url} onChange={v=>set('image_url',v)} />
         <div className="form-field"><label>YouTube/Vimeo URL</label><input value={f.external_video_url} onChange={e=>set('external_video_url',e.target.value)} placeholder="https://youtube.com/…" /></div>
@@ -1139,7 +1139,7 @@ export default function Admin() {
 
         {tab==='cakes' && (
           (newCake||editCake)
-            ? <CakeEditor cake={editCake} onSave={refreshCakes} onCancel={()=>{setNewCake(false);setEditCake(null)}} />
+            ? <CakeEditor cake={editCake} onSave={refreshCakes} onCancel={()=>{setNewCake(false);setEditCake(null)}} existingCakeCats={[...new Set(cakes.map(c=>c.category).filter(Boolean))]} />
             : <>
                 <div className="tab-header"><h2>Cakes</h2><button className="btn btn-sage" onClick={()=>setNewCake(true)}>+ Add New Cake</button></div>
                 {cakes.length===0 ? <p className="empty-msg">No cakes yet.</p> : (
@@ -1173,7 +1173,7 @@ export default function Admin() {
 
         {tab==='books' && (
           (newBook||editBook)
-            ? <BookEditor book={editBook} onSave={refreshBooks} onCancel={()=>{setNewBook(false);setEditBook(null)}} />
+            ? <BookEditor book={editBook} onSave={refreshBooks} onCancel={()=>{setNewBook(false);setEditBook(null)}} existingBookCats={[...new Set(books.map(b=>b.category).filter(Boolean))]} />
             : <>
                 <div className="tab-header"><h2>Books & Cookbooks</h2><button className="btn btn-sage" onClick={()=>setNewBook(true)}>+ Add New Book</button></div>
                 {books.length===0 ? <p className="empty-msg">No books yet.</p> : (
@@ -1203,7 +1203,7 @@ export default function Admin() {
 
         {tab==='recipes' && (
           (newPost||editPost)
-            ? <PostEditor post={editPost} onSave={refreshPosts} onCancel={()=>{setNewPost(false);setEditPost(null)}} />
+            ? <PostEditor post={editPost} onSave={refreshPosts} onCancel={()=>{setNewPost(false);setEditPost(null)}} existingPostCats={[...new Set(posts.map(p=>p.category).filter(Boolean))]} />
             : <>
                 <div className="tab-header"><h2>Recipes & Blog</h2><button className="btn btn-sage" onClick={()=>setNewPost(true)}>+ Add New Post</button></div>
                 {posts.length===0 ? <p className="empty-msg">No posts yet.</p> : (

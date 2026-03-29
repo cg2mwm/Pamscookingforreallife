@@ -3,14 +3,19 @@ import { getBooks, getSetting } from '../supabase'
 import './BooksPage.css'
 
 export default function BooksPage() {
-  const [books, setBooks]   = useState([])
-  const [pg, setPg]         = useState({})
+  const [books, setBooks]     = useState([])
+  const [pg, setPg]           = useState({})
   const [loading, setLoading] = useState(true)
+  const [active, setActive]   = useState('All')
 
   useEffect(() => {
     getBooks().then(d => { setBooks(d); setLoading(false) })
     getSetting('page_books').then(d => setPg(d || {}))
   }, [])
+
+  // Only show categories that have at least one book
+  const categories = ['All', ...new Set(books.map(b => b.category).filter(Boolean))]
+  const visible = active === 'All' ? books : books.filter(b => b.category === active)
 
   return (
     <div>
@@ -31,12 +36,32 @@ export default function BooksPage() {
 
       <section className="section">
         <div className="container">
+          {/* Category filter — only shows if at least one book has a category */}
+          {categories.length > 1 && (
+            <div className="cakes-filters" style={{marginBottom:'1.5rem'}}>
+              {categories.map(cat => (
+                <button key={cat} className={`filter-btn ${active === cat ? 'active' : ''}`} onClick={() => setActive(cat)}>
+                  {cat}
+                </button>
+              ))}
+            </div>
+          )}
+
           {loading ? <p className="loading">Loading books…</p>
-            : books.length === 0
-              ? <p style={{ textAlign:'center', color:'var(--text-muted)', fontStyle:'italic' }}>No books listed yet — check back soon!</p>
+            : visible.length === 0
+              ? (
+                <div style={{textAlign:'center',padding:'2rem 0'}}>
+                  <p style={{color:'var(--text-muted)',fontStyle:'italic'}}>
+                    {active === 'All' ? 'No books listed yet — check back soon!' : `No books in this category yet.`}
+                  </p>
+                  {active !== 'All' && (
+                    <button onClick={() => setActive('All')} style={{color:'var(--sage)',textDecoration:'underline',cursor:'pointer',fontSize:'1rem',background:'none',border:'none',marginTop:'0.5rem'}}>Show all books</button>
+                  )}
+                </div>
+              )
               : (
                 <div className="books-grid">
-                  {books.map(book => (
+                  {visible.map(book => (
                     <article key={book.id} className="book-card card">
                       <div className="book-card__img-wrap">
                         {book.image_url
@@ -47,7 +72,7 @@ export default function BooksPage() {
                         {!book.available && <div className="book-card__sold">Out of Stock</div>}
                       </div>
                       <div className="book-card__body">
-                        <span className="badge badge-sage" style={{ marginBottom:'0.5rem' }}>{book.category}</span>
+                        {book.category && <span className="badge badge-sage" style={{ marginBottom:'0.5rem' }}>{book.category}</span>}
                         <h3 className="book-card__title">{book.title}</h3>
                         <p className="book-card__desc">{book.description}</p>
                         <div className="book-card__footer">
