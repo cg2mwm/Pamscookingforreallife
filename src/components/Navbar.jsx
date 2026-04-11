@@ -31,6 +31,7 @@ export default function Navbar() {
           <NavLink to="/photos">Photos</NavLink>
           <NavLink to="/recipes">Recipes</NavLink>
           <NavLink to="/booking">Book a Consult</NavLink>
+          <NavLink to="/install" className="navbar__app-btn">📲 Get the App</NavLink>
         </nav>
         <button className={`burger ${open ? 'is-open' : ''}`} onClick={() => setOpen(!open)} aria-label="Menu">
           <span /><span /><span />

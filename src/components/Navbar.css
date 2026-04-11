@@ -48,3 +48,14 @@
   .navbar__links.is-open { display: flex; }
   .navbar__links a { font-size: 1.1rem; }
 }
+
+/* App install button in nav */
+.navbar__app-btn {
+  background: rgba(253,250,244,0.15) !important;
+  border-radius: 100px !important;
+  padding: 0.35rem 0.9rem !important;
+  font-size: 0.82rem !important;
+}
+.navbar__app-btn:hover {
+  background: rgba(253,250,244,0.3) !important;
+}

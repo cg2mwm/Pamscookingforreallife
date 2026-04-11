@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { getCakes, getPosts, getSetting } from '../supabase'
 import CakeCard from '../components/CakeCard'
@@ -16,6 +16,27 @@ export default function Home() {
     getCakes().then(all => setFeatured(all.filter(c => c.featured && c.available).slice(0, 3)))
     getPosts().then(p => setLatestPost(p[0] || null))
   }, [])
+
+  // ── PWA install prompt ─────────────────────────────
+  const [installPrompt, setInstallPrompt] = useState(null)
+  const [installed, setInstalled] = useState(false)
+
+  useEffect(() => {
+    const handler = e => { e.preventDefault(); setInstallPrompt(e) }
+    window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', () => setInstalled(true))
+    // Check if already installed (standalone mode)
+    if (window.matchMedia('(display-mode: standalone)').matches) setInstalled(true)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const handleInstall = async () => {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    if (outcome === 'accepted') setInstalled(true)
+    setInstallPrompt(null)
+  }
 
   if (!pg || !site) return null
 
@@ -45,6 +66,62 @@ export default function Home() {
           </div>
         </div>
         <div className="hero__scroll"><div className="hero__scroll-line" /></div>
+      </section>
+
+      {/* Install App Banner */}
+      {installPrompt && !installed && (
+        <div className="install-banner">
+          <div className="install-banner__inner">
+            <img src="/icons/icon-192.png" alt="App icon" className="install-banner__icon" />
+            <div className="install-banner__text">
+              <strong>Add to your phone!</strong>
+              <span>Install the app for quick ordering anytime</span>
+            </div>
+            <button className="btn btn-sage btn-sm install-banner__btn" onClick={handleInstall}>
+              Install App
+            </button>
+            <button className="install-banner__dismiss" onClick={() => setInstallPrompt(null)}>✕</button>
+          </div>
+        </div>
+      )}
+
+
+      {/* Quick Nav Buttons */}
+      <section className="quick-nav">
+        <div className="container">
+          <div className="quick-nav__grid">
+            <Link to="/cakes" className="quick-nav__card">
+              <span className="quick-nav__icon">🎂</span>
+              <span className="quick-nav__label">Cakes</span>
+              <span className="quick-nav__sub">Browse the menu</span>
+            </Link>
+            <Link to="/books" className="quick-nav__card">
+              <span className="quick-nav__icon">📚</span>
+              <span className="quick-nav__label">Cookbooks</span>
+              <span className="quick-nav__sub">Take a recipe home</span>
+            </Link>
+            <Link to="/recipes" className="quick-nav__card">
+              <span className="quick-nav__icon">📖</span>
+              <span className="quick-nav__label">Recipes</span>
+              <span className="quick-nav__sub">Tips from the kitchen</span>
+            </Link>
+            <Link to="/photos" className="quick-nav__card">
+              <span className="quick-nav__icon">📸</span>
+              <span className="quick-nav__label">Gallery</span>
+              <span className="quick-nav__sub">See how it's made</span>
+            </Link>
+            <Link to="/booking" className="quick-nav__card">
+              <span className="quick-nav__icon">📅</span>
+              <span className="quick-nav__label">Book a Consult</span>
+              <span className="quick-nav__sub">Free 30-min call</span>
+            </Link>
+            <Link to="/install" className="quick-nav__card quick-nav__card--app">
+              <span className="quick-nav__icon">📲</span>
+              <span className="quick-nav__label">Get the App</span>
+              <span className="quick-nav__sub">Install on your phone</span>
+            </Link>
+          </div>
+        </div>
       </section>
 
       {/* Featured Cakes */}

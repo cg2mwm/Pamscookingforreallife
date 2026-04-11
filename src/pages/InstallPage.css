@@ -1,0 +1,87 @@
+.install-page { max-width: 680px; margin: 0 auto; padding: 2.5rem 0 4rem; }
+
+.install-easy-card {
+  display: flex; align-items: center; gap: 1.25rem;
+  background: var(--sage-dark); color: white;
+  padding: 1.25rem 1.5rem; border-radius: var(--radius);
+  margin-bottom: 2rem; flex-wrap: wrap;
+}
+.install-easy-card strong { color: white; font-size: 1.05rem; }
+.install-easy-card p { color: rgba(255,255,255,0.75); margin-bottom: 0; }
+.install-easy-icon { font-size: 2rem; flex-shrink: 0; }
+
+.install-features { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2.5rem; }
+.install-feature {
+  display: flex; align-items: flex-start; gap: 1rem;
+  background: var(--white); padding: 1rem 1.25rem;
+  border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.install-feature__icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; }
+.install-feature strong { display: block; color: var(--text); font-size: 0.95rem; margin-bottom: 2px; }
+.install-feature span { font-size: 0.85rem; color: var(--text-muted); }
+
+.install-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+.install-tab {
+  flex: 1; padding: 0.7rem 1rem; border-radius: var(--radius);
+  border: 2px solid var(--sage-pale); background: white;
+  font-family: var(--font-body); font-size: 0.95rem; font-weight: 700;
+  color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+}
+.install-tab:hover { border-color: var(--sage-light); color: var(--sage-dark); }
+.install-tab.active { background: var(--sage-dark); border-color: var(--sage-dark); color: white; }
+
+.install-steps-card {
+  background: var(--white); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: hidden; margin-bottom: 1.5rem;
+}
+.install-step {
+  display: flex; align-items: flex-start; gap: 1rem;
+  padding: 1rem 1.25rem; border-bottom: 1px solid var(--sage-pale);
+  transition: background 0.15s;
+}
+.install-step:last-child { border-bottom: none; }
+.install-step:hover { background: var(--mint-pale, var(--sage-ghost)); }
+.install-step-num {
+  width: 28px; height: 28px; background: var(--sage); color: white;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+}
+.install-step-content { font-size: 0.9rem; color: var(--muted); line-height: 1.65; }
+.install-step-content strong { color: var(--text); }
+
+.install-note {
+  background: var(--yellow-pale, #fffbe6); border: 1.5px solid #f0d060;
+  border-radius: var(--radius); padding: 1rem 1.25rem;
+  font-size: 0.9rem; color: #7a6000; line-height: 1.65;
+}
+.install-note strong { color: #5a4500; }
+
+.install-success-card {
+  background: var(--white); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 3rem 2rem;
+  text-align: center; max-width: 480px; margin: 3rem auto;
+}
+.install-success-icon { font-size: 4rem; margin-bottom: 1rem; }
+.install-success-card h2 { font-family: var(--font-display); color: var(--sage-dark); margin-bottom: 0.75rem; }
+
+/* Banner on homepage */
+.install-banner {
+  background: var(--sage-dark); border-top: 3px solid var(--sage);
+  position: sticky; top: 0; z-index: 50; animation: slideDown 0.3s ease;
+}
+@keyframes slideDown { from { transform: translateY(-100%); opacity:0 } to { transform: translateY(0); opacity:1 } }
+.install-banner__inner {
+  max-width: 960px; margin: 0 auto; padding: 0.75rem 1.5rem;
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+}
+.install-banner__icon { width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0; }
+.install-banner__text { flex: 1; }
+.install-banner__text strong { display: block; color: white; font-size: 0.95rem; }
+.install-banner__text span { font-size: 0.8rem; color: rgba(255,255,255,0.7); }
+.install-banner__btn { flex-shrink: 0; }
+.install-banner__dismiss {
+  background: none; border: none; color: rgba(255,255,255,0.5);
+  font-size: 1.1rem; cursor: pointer; padding: 0.2rem 0.4rem;
+  transition: color 0.2s; flex-shrink: 0;
+}
+.install-banner__dismiss:hover { color: white; }

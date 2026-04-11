@@ -13,6 +13,7 @@ import BookingPage   from './pages/BookingPage'
 import PhotosPage    from './pages/PhotosPage'
 import OrderSuccess  from './pages/OrderSuccess'
 import Admin         from './pages/Admin'
+import InstallPage   from './pages/InstallPage'
 
 class ErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { err: null } }
@@ -49,6 +50,7 @@ export default function App() {
                 <Route path="/recipes/:id"   element={<BlogPost />} />
                 <Route path="/booking"       element={<BookingPage />} />
                 <Route path="/order-success" element={<OrderSuccess />} />
+                <Route path="/install" element={<InstallPage />} />
               </Routes>
             </main>
             <Footer />

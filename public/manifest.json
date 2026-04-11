@@ -1,0 +1,26 @@
+{
+  "name": "Pam's Cooking for Real Life",
+  "short_name": "Pam's Cakes",
+  "description": "Handcrafted cakes, cookbooks, and recipes from Pam's kitchen in Elon, NC.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2D5233",
+  "theme_color": "#2D5233",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "shopping"],
+  "screenshots": []
+}
